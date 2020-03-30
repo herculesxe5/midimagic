@@ -8,17 +8,19 @@ ad57x4::ad57x4(SPIClass &spi, u8 sync, u8 ldac) :
     m_sync(sync),
     m_ldac(ldac) {
   m_spi.begin(m_sync);
+  pinMode(m_ldac, OUTPUT);
   digitalWrite(m_ldac, HIGH);
-
   // set output range to 5V unipolar
-  m_spi.transfer(m_sync, REG_OUTPUT_RANGE_MASK | ALL_CHANNELS, SPI_CONTINUE);
-  m_spi.transfer16(m_sync, 0x0, SPI_LAST);
-
+  u8 data[3];
+  data[0] = REG_OUTPUT_RANGE_MASK | ALL_CHANNELS;
+  data[1] = 0x0;
+  data[2] = 0x0;
+  send(data);
   // power all channels
-  m_spi.transfer(m_sync, REG_POWER_CTRL_MASK, SPI_CONTINUE);
-  m_spi.transfer(m_sync, 0x0, SPI_CONTINUE);
-  m_spi.transfer(m_sync, 0x0F, SPI_LAST);
-
+  data[0] = REG_POWER_CTRL_MASK;
+  data[1] = 0x0;
+  data[2] = 0x0F;
+  send(data);
   delay(1);
   digitalWrite(m_ldac, LOW);
 }
@@ -28,7 +30,15 @@ ad57x4::~ad57x4() {
 }
 
 void ad57x4::set_level(u16 level, u8 channel) {
-  m_spi.transfer(m_sync, channel, SPI_CONTINUE);
-  m_spi.transfer16(m_sync, level, SPI_LAST);
+   u8 data[3];
+   data[0] = channel;
+   data[1] = (u8) (level >> 8) & 0xFF;
+   data[2] = (u8) level & 0xFF;
+   send(data);
+}
+
+void ad57x4::send(u8 (&data)[3]) {
+    m_spi.transfer(m_sync, data[0], SPI_CONTINUE);
+    m_spi.transfer16(m_sync, data[1] << 8 | data[2], SPI_LAST);
 }
 }

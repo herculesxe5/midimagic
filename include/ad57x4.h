@@ -14,17 +14,16 @@ namespace midimagic {
             ALL_CHANNELS
         };
 
-        ad57x4(SPIClass &spi, u8 sync, u8 ldac);
+        explicit ad57x4(SPIClass &spi, u8 sync);
         ad57x4()= delete;
         ad57x4(const ad57x4&) = delete;
         ~ad57x4();
 
-        void set_level(u16 level, u8 out);
+        void set_level(u16 level, u8 channel);
 
     private:
         SPIClass &m_spi;
         u8 m_sync;
-        u8 m_ldac;
 
         void send(u8 (&data)[3]);
     };

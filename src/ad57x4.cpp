@@ -3,26 +3,21 @@
 #define REG_POWER_CTRL_MASK   0x10
 
 namespace midimagic {
-ad57x4::ad57x4(SPIClass &spi, u8 sync, u8 ldac) :
+ad57x4::ad57x4(SPIClass &spi, u8 sync) :
     m_spi(spi),
-    m_sync(sync),
-    m_ldac(ldac) {
+    m_sync(sync) {
   m_spi.begin(m_sync);
-  pinMode(m_ldac, OUTPUT);
-  digitalWrite(m_ldac, HIGH);
-  // set output range to 5V unipolar
+  // set output range +-5V
   u8 data[3];
   data[0] = REG_OUTPUT_RANGE_MASK | ALL_CHANNELS;
   data[1] = 0x0;
-  data[2] = 0x0;
+  data[2] = 0b11;
   send(data);
   // power all channels
   data[0] = REG_POWER_CTRL_MASK;
   data[1] = 0x0;
   data[2] = 0x0F;
   send(data);
-  delay(1);
-  digitalWrite(m_ldac, LOW);
 }
 
 ad57x4::~ad57x4() {
@@ -41,4 +36,4 @@ void ad57x4::send(u8 (&data)[3]) {
     m_spi.transfer(m_sync, data[0], SPI_CONTINUE);
     m_spi.transfer16(m_sync, data[1] << 8 | data[2], SPI_LAST);
 }
-}
+} // namespace midimagic

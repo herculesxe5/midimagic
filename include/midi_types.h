@@ -26,6 +26,13 @@ struct midi_message {
         data0(data0),
         data1(data1) {
     };
+
+    bool is_same_note(midi_message &m) {
+        if(data0 == m.data0)
+            return true;
+        else
+            return false;
+    };
 };
 
 } // namespace midimagic

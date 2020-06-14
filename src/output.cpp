@@ -113,5 +113,6 @@ namespace midimagic {
                 return true;
             }
         }
+        return false;
     }
 } // namespace midimagic

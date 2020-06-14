@@ -13,10 +13,12 @@ namespace midimagic {
     constexpr u8 mosi_dac   = PA7;
     constexpr u8 miso_dac   = PA6;
     constexpr u8 clk_dac    = PA5;
-    constexpr u8 port1_pin  = PB11;
-    constexpr u8 port2_pin  = PB12;
-    constexpr u8 port3_pin  = PB13;
-    constexpr u8 port4_pin  = PB14;
+    constexpr u8 disp_scl   = PB10;
+    constexpr u8 disp_sca   = PB11;
+    constexpr u8 port0_pin  = PB12;
+    constexpr u8 port1_pin  = PB13;
+    constexpr u8 port2_pin  = PB14;
+    constexpr u8 port3_pin  = PB15;
 
     SPIClass spi1(mosi_dac, miso_dac, clk_dac);
 
@@ -26,10 +28,13 @@ namespace midimagic {
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
     std::unique_ptr<output_port> port0 = std::make_unique<output_port>(
-            port1_pin, ad57x4::CHANNEL_A, dac0);
+            port0_pin, ad57x4::CHANNEL_A, dac1);
     std::unique_ptr<output_port> port1 = std::make_unique<output_port>(
-            port2_pin, ad57x4::CHANNEL_B, dac0);
-
+            port1_pin, ad57x4::CHANNEL_B, dac1);
+    std::unique_ptr<output_port> port2 = std::make_unique<output_port>(
+            port2_pin, ad57x4::CHANNEL_C, dac1);
+    std::unique_ptr<output_port> port3 = std::make_unique<output_port>(
+            port3_pin, ad57x4::CHANNEL_D, dac1);
     output_demux demux0(output_demux::OVERWRITE_OLDEST);
 };
 
@@ -57,6 +62,8 @@ void setup() {
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
     demux0.add_output(std::move(port0));
     demux0.add_output(std::move(port1));
+    demux0.add_output(std::move(port2));
+    demux0.add_output(std::move(port3));
 }
 
 void loop() {

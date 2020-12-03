@@ -9,23 +9,25 @@
 #include "output.h"
 
 namespace midimagic {
-    constexpr u8 power_dacs = PA11;
-    constexpr u8 cs_dac0    = PA0;
-    constexpr u8 cs_dac1    = PA1;
-    constexpr u8 mosi_dac   = PA7;
-    constexpr u8 miso_dac   = PA6;
-    constexpr u8 clk_dac    = PA5;
-    constexpr u8 rot_sw     = PB7;
-    constexpr u8 rot_clk    = PB8;
-    constexpr u8 rot_dt     = PB9;
-    constexpr u8 disp_scl   = PB10;
-    constexpr u8 disp_sca   = PB11;
-    constexpr u8 port0_pin  = PB12;
-    constexpr u8 port1_pin  = PB13;
-    constexpr u8 port2_pin  = PB14;
-    constexpr u8 port3_pin  = PB15;
-
-
+    const u8 power_dacs = PB12;
+    const u8 cs_dac0    = PA0;
+    const u8 cs_dac1    = PA1;
+    const u8 mosi_dac   = PA7;
+    const u8 miso_dac   = PA6;
+    const u8 clk_dac    = PA5;
+    const u8 rot_sw     = PB15;
+    const u8 rot_clk    = PB14;
+    const u8 rot_dt     = PB13;
+    const u8 disp_scl   = PB10;
+    const u8 disp_sca   = PB11;
+    const u8 port0_pin  = PB9;
+    const u8 port1_pin  = PB8;
+    const u8 port2_pin  = PB7;
+    const u8 port3_pin  = PB6;
+    const u8 port4_pin  = PB5;
+    const u8 port5_pin  = PB4;
+    const u8 port6_pin  = PB3;
+    const u8 port7_pin  = PA15;
 
     SPIClass spi1(mosi_dac, miso_dac, clk_dac);
 
@@ -34,15 +36,16 @@ namespace midimagic {
 
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
-    std::unique_ptr<output_port> port0 = std::make_unique<output_port>(
-            port0_pin, ad57x4::CHANNEL_A, dac1);
-    std::unique_ptr<output_port> port1 = std::make_unique<output_port>(
-            port1_pin, ad57x4::CHANNEL_B, dac1);
-    std::unique_ptr<output_port> port2 = std::make_unique<output_port>(
-            port2_pin, ad57x4::CHANNEL_C, dac1);
-    std::unique_ptr<output_port> port3 = std::make_unique<output_port>(
-            port3_pin, ad57x4::CHANNEL_D, dac1);
-    output_demux demux0(output_demux::OVERWRITE_OLDEST);
+    output_port port0(port0_pin, ad57x4::CHANNEL_A, dac1);
+    output_port port1(port1_pin, ad57x4::CHANNEL_B, dac1);
+    output_port port2(port2_pin, ad57x4::CHANNEL_C, dac1);
+    output_port port3(port3_pin, ad57x4::CHANNEL_D, dac1);
+    output_port port4(port4_pin, ad57x4::CHANNEL_A, dac0);
+    output_port port5(port5_pin, ad57x4::CHANNEL_B, dac0);
+    output_port port6(port6_pin, ad57x4::CHANNEL_C, dac0);
+    output_port port7(port7_pin, ad57x4::CHANNEL_D, dac0);
+
+    identic_output_demux demux0;
 
     TwoWire disp_i2c(PB11, PB10);
     Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
@@ -85,10 +88,14 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
-    demux0.add_output(std::move(port0));
-    demux0.add_output(std::move(port1));
-    demux0.add_output(std::move(port2));
-    demux0.add_output(std::move(port3));
+    demux0.add_output(port0);
+    demux0.add_output(port1);
+    demux0.add_output(port2);
+    demux0.add_output(port3);
+    demux0.add_output(port4);
+    demux0.add_output(port5);
+    demux0.add_output(port6);
+    demux0.add_output(port7);
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);
     pinMode(rot_sw, INPUT_PULLUP);
@@ -108,5 +115,5 @@ void setup() {
 
 void loop() {
     using namespace midimagic;
-    MIDI.read();
+        MIDI.read();
 }

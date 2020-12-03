@@ -14,7 +14,6 @@ namespace midimagic {
     public:
         explicit output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac);
         output_port() = delete;
-        output_port(const output_port&) = delete;
 
         bool is_active();
         bool is_note(midi_message &msg);
@@ -29,22 +28,42 @@ namespace midimagic {
 
     class output_demux {
     public:
-        enum demux_mode {
-            RANDOM,
-            OVERWRITE_OLDEST,
-            SAME_ON_ALL
-        };
+        output_demux();
+        output_demux(const output_demux&) = delete;
+        virtual ~output_demux();
 
-        explicit output_demux(demux_mode mode);
+        virtual void add_note(midi_message& msg) = 0;
 
-        void add_output(std::unique_ptr<output_port> p);
-        void add_note(midi_message& msg);
-        void remove_note(midi_message& msg);
-    private:
+        virtual void add_output(output_port p);
+        virtual void remove_note(midi_message& msg);
+    protected:
         bool set_note(midi_message &msg);
-        demux_mode  m_mode;
-        std::vector<std::unique_ptr<output_port>> m_ports;
+        std::vector<output_port> m_ports;
         std::vector<midi_message> m_msgs;
+    };
+
+    class random_output_demux : public output_demux {
+    public:
+        random_output_demux();
+        random_output_demux(const random_output_demux&) = delete;
+        virtual ~random_output_demux();
+
+        void add_note(midi_message& msg);
+    };
+
+    class identic_output_demux : public output_demux {
+    public:
+        identic_output_demux();
+        identic_output_demux(const identic_output_demux&) = delete;
+        virtual ~identic_output_demux();
+        void add_note(midi_message& msg);
+    };
+
+    class fifo_output_demux : public output_demux {
+        fifo_output_demux();
+        fifo_output_demux(const fifo_output_demux&) = delete;
+        virtual ~fifo_output_demux();
+        void add_note(midi_message& msg);
     };
 }
 

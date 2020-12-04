@@ -1,12 +1,13 @@
-#include <common.h>
 #include <SPI.h>
 #include <MIDI.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 
+#include "common.h"
 #include "ad57x4.h"
 #include "midi_types.h"
 #include "output.h"
+#include "menu.h"
 
 namespace midimagic {
     const u8 power_dacs = PB12;
@@ -49,6 +50,8 @@ namespace midimagic {
 
     TwoWire disp_i2c(PB11, PB10);
     Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
+
+    menu_state menu;
 };
 
 void handleNoteOn(byte midi_channel, byte midi_note, byte midi_velo) {
@@ -67,15 +70,17 @@ void rot_clk_isr() {
     using namespace midimagic;
     volatile int i = digitalRead(rot_dt);
     volatile int j;
+    // FIXME probably needs debouncing
     if (i == HIGH)
-        j = 0xdead;
+        menu.notify(menu_state::ROT_LEFT);
     if (i == LOW)
-        j = 0xbeef;
+        menu.notify(menu_state::ROT_RIGHT);
 }
 
 void rot_sw_isr() {
     using namespace midimagic;
-    int i = 0xbeef;
+    // FIXME probably needs debouncing
+    menu.notify(menu_state::ROT_BUTTON);
 }
 
 void setup() {
@@ -96,11 +101,13 @@ void setup() {
     demux0.add_output(port5);
     demux0.add_output(port6);
     demux0.add_output(port7);
+    // Set up interrupts
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);
     pinMode(rot_sw, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(rot_clk), rot_clk_isr, FALLING);
     attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, FALLING);
+    // Display boot screen
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     display.clearDisplay();
     display.setTextSize(2);
@@ -111,9 +118,11 @@ void setup() {
     display.println(F("by"));
     display.println(F("raumschiffgeraeusche"));
     display.display();
+    auto v = std::make_shared<over_view>(menu, display);
+    menu.register_view(v);
 }
 
 void loop() {
     using namespace midimagic;
-        MIDI.read();
+    MIDI.read();
 }

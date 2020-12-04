@@ -48,7 +48,7 @@ namespace midimagic {
         random_output_demux(const random_output_demux&) = delete;
         virtual ~random_output_demux();
 
-        void add_note(midi_message& msg);
+        void add_note(midi_message& msg) override;
     };
 
     class identic_output_demux : public output_demux {
@@ -56,14 +56,14 @@ namespace midimagic {
         identic_output_demux();
         identic_output_demux(const identic_output_demux&) = delete;
         virtual ~identic_output_demux();
-        void add_note(midi_message& msg);
+        void add_note(midi_message& msg) override;
     };
 
     class fifo_output_demux : public output_demux {
         fifo_output_demux();
         fifo_output_demux(const fifo_output_demux&) = delete;
         virtual ~fifo_output_demux();
-        void add_note(midi_message& msg);
+        void add_note(midi_message& msg) override;
     };
 }
 

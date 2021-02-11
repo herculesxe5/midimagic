@@ -37,21 +37,22 @@ namespace midimagic {
 
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
-    output_port port0(port0_pin, ad57x4::CHANNEL_A, dac1);
-    output_port port1(port1_pin, ad57x4::CHANNEL_B, dac1);
-    output_port port2(port2_pin, ad57x4::CHANNEL_C, dac1);
-    output_port port3(port3_pin, ad57x4::CHANNEL_D, dac1);
-    output_port port4(port4_pin, ad57x4::CHANNEL_A, dac0);
-    output_port port5(port5_pin, ad57x4::CHANNEL_B, dac0);
-    output_port port6(port6_pin, ad57x4::CHANNEL_C, dac0);
-    output_port port7(port7_pin, ad57x4::CHANNEL_D, dac0);
+    std::shared_ptr<menu_state> menu(new menu_state);
+
+    output_port port0(port0_pin, ad57x4::CHANNEL_A, dac1, menu, 0);
+    output_port port1(port1_pin, ad57x4::CHANNEL_B, dac1, menu, 1);
+    output_port port2(port2_pin, ad57x4::CHANNEL_C, dac1, menu, 2);
+    output_port port3(port3_pin, ad57x4::CHANNEL_D, dac1, menu, 3);
+    output_port port4(port4_pin, ad57x4::CHANNEL_A, dac0, menu, 4);
+    output_port port5(port5_pin, ad57x4::CHANNEL_B, dac0, menu, 5);
+    output_port port6(port6_pin, ad57x4::CHANNEL_C, dac0, menu, 6);
+    output_port port7(port7_pin, ad57x4::CHANNEL_D, dac0, menu, 7);
 
     identic_output_demux demux0;
 
     TwoWire disp_i2c(PB11, PB10);
     Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
 
-    menu_state menu;
 };
 
 void handleNoteOn(byte midi_channel, byte midi_note, byte midi_velo) {
@@ -69,18 +70,27 @@ void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
 void rot_clk_isr() {
     using namespace midimagic;
     volatile int i = digitalRead(rot_dt);
-    volatile int j;
-    // FIXME probably needs debouncing
-    if (i == HIGH)
-        menu.notify(menu_state::ROT_LEFT);
-    if (i == LOW)
-        menu.notify(menu_state::ROT_RIGHT);
+    // FIXME test following trivial debounce
+    volatile unsigned long current_millis = millis();
+    if (current_millis - menu->m_rot_int_ts > menu->k_rot_int_th) {
+        menu->m_rot_int_ts = current_millis;
+
+        if (i == HIGH) {
+            menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_LEFT);
+            menu->notify(a);
+        }
+        if (i == LOW) {
+            menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_RIGHT);
+            menu->notify(a);
+        }
+    }
 }
 
 void rot_sw_isr() {
     using namespace midimagic;
     // FIXME probably needs debouncing
-    menu.notify(menu_state::ROT_BUTTON);
+    const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_BUTTON);
+    menu->notify(a);
 }
 
 void setup() {
@@ -118,8 +128,10 @@ void setup() {
     display.println(F("by"));
     display.println(F("raumschiffgeraeusche"));
     display.display();
-    auto v = std::make_shared<over_view>(menu, display);
-    menu.register_view(v);
+    // Wait 3 sec before display refresh
+    delay(3000);
+    auto v = std::make_shared<over_view>(display);
+    menu->register_view(v);
 }
 
 void loop() {

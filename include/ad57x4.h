@@ -1,6 +1,6 @@
 #ifndef AD57X4_H
 #define AD57X4_H
-#include <common.h>
+#include "common.h"
 #include <SPI.h>
 
 namespace midimagic {

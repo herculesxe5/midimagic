@@ -1,15 +1,18 @@
 #include "output.h"
 #include "midi_types.h"
 #include "ad57x4.h"
-
 #include <cstdlib>
 
 namespace midimagic {
-    output_port::output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac)
+    output_port::output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
+                             std::shared_ptr<menu_state> menu, u8 port_number)
         : m_digital_pin(digital_pin)
         , m_dac_channel(dac_channel)
         , m_dac(dac)
-        , m_current_note(255) {
+        , m_current_note(255)
+        , m_menu(menu)
+        , m_port_number(port_number)
+        , m_menu_action_kind(menu_action::kind::PORT_ACTIVITY) {
         pinMode(m_digital_pin, OUTPUT);
     }
 
@@ -29,11 +32,21 @@ namespace midimagic {
         i16 steps = delta * 136 << 2;
         m_dac.set_level(steps, m_dac_channel);
         digitalWrite(m_digital_pin, HIGH);
+        //send port activity info to current view
+        menu_action a(m_menu_action_kind, menu_action::subkind::PORT_ACTIVE, m_port_number, m_current_note);
+        m_menu->notify(a);
+    }
+
+    u8 output_port::get_note() {
+        return m_current_note;
     }
 
     void output_port::end_note() {
         m_current_note = 255;
         digitalWrite(m_digital_pin, LOW);
+        //send port activity info to current view
+        menu_action a(m_menu_action_kind, menu_action::subkind::PORT_NACTIVE, m_port_number);
+        m_menu->notify(a);
     }
 
     output_demux::output_demux() {

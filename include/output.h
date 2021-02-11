@@ -2,6 +2,7 @@
 #define MIDIMAGIC_OUTPUT_H
 
 #include "common.h"
+#include "menu.h"
 #include <vector>
 #include <queue>
 #include <memory>
@@ -12,18 +13,24 @@ namespace midimagic {
 
     class output_port {
     public:
-        explicit output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac);
+        explicit output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
+                             std::shared_ptr<menu_state> menu, u8 port_number);
         output_port() = delete;
 
         bool is_active();
         bool is_note(midi_message &msg);
         void set_note(midi_message &note_on_msg);
+        u8   get_note();
         void end_note();
+
     private:
         u8 m_digital_pin;
         u8 m_dac_channel;
         ad57x4 &m_dac;
         u8 m_current_note;
+        std::shared_ptr<menu_state> m_menu;
+        u8 m_port_number;
+        const menu_action::kind m_menu_action_kind;
     };
 
     class output_demux {

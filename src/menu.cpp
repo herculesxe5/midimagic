@@ -41,8 +41,8 @@ namespace midimagic {
         : menu_view(d)
         , m_rowoffset(32)
         , m_activitydot_xoffset(4)
-        , m_port_value_xoffset(10)
-        , m_activity_yoffset(30) {
+        , m_port_value_xoffset(12)
+        , m_activity_yoffset(20) {
         // nothing to do
     }
 
@@ -52,25 +52,25 @@ namespace midimagic {
 
     void over_view::notify(const menu_action &a) const {
 
-      switch (a.m_kind) {
-          case menu_action::kind::UPDATE :
-              m_display.clearDisplay();
-              draw_statics();
-              break;
-          case menu_action::kind::PORT_ACTIVITY :
-              if (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
-                  draw_activity(a.m_data0, a.m_data1);
-              }
-              if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
-                  draw_inactivity(a.m_data0);
-              }
-              break;
-          default :
-              // nothing to do
-              break;
-      }
-
-        m_display.display();
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.clearDisplay();
+                draw_statics();
+                m_display.display();
+                break;
+            case menu_action::kind::PORT_ACTIVITY :
+                if (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
+                    draw_activity(a.m_data0, a.m_data1);
+                }
+                if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
+                    draw_inactivity(a.m_data0);
+                }
+                m_display.display();
+                break;
+            default :
+                // nothing to do
+                break;
+        }
     }
 
     void over_view::draw_statics() const {
@@ -113,9 +113,11 @@ namespace midimagic {
 
         // draw port value
         if (port_number < 4) {
-          m_display.setCursor(port_number*32+m_port_value_xoffset, m_activity_yoffset);
+            m_display.fillRect(port_number*32+m_port_value_xoffset, m_activity_yoffset, 12, 10, SSD1306_BLACK);
+            m_display.setCursor(port_number*32+m_port_value_xoffset, m_activity_yoffset);
         } else {
-          m_display.setCursor((port_number-4)*32+m_port_value_xoffset, m_activity_yoffset+m_rowoffset);
+            m_display.fillRect((port_number-4)*32+m_port_value_xoffset, m_activity_yoffset+m_rowoffset, 12, 10, SSD1306_BLACK);
+            m_display.setCursor((port_number-4)*32+m_port_value_xoffset, m_activity_yoffset+m_rowoffset);
         }
         m_display.print(port_value);
 
@@ -124,11 +126,11 @@ namespace midimagic {
     void over_view::draw_inactivity(const int port_number) const {
         m_display.setTextSize(1);
 
-        // draw space over activity dot
+        // draw black rectangle over activity dot
         if (port_number < 4) {
-            m_display.setCursor(port_number*32+m_activitydot_xoffset, m_activity_yoffset);
+            m_display.fillRect(port_number*32+m_activitydot_xoffset, m_activity_yoffset, 5, 10, SSD1306_BLACK);
         } else {
-            m_display.setCursor((port_number-4)*32+m_activitydot_xoffset, m_activity_yoffset+m_rowoffset);
+            m_display.fillRect((port_number-4)*32+m_activitydot_xoffset, m_activity_yoffset+m_rowoffset, 5, 10, SSD1306_BLACK);
         }
         m_display.print(" ");
     }

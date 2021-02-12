@@ -102,29 +102,30 @@ namespace midimagic {
 
     void over_view::draw_activity(const int port_number, const int port_value) const {
         m_display.setTextSize(1);
+        int xoffset;
+        int yoffset;
+
+        // calculate offsets
+        if (port_number < 4) {
+            xoffset = port_number*32;
+            yoffset = m_activity_yoffset;
+        } else {
+            xoffset = (port_number-4)*32;
+            yoffset = m_activity_yoffset + m_rowoffset;
+        }
 
         // draw activity dot
-        if (port_number < 4) {
-            m_display.setCursor(port_number*32+m_activitydot_xoffset, m_activity_yoffset);
-        } else {
-            m_display.setCursor((port_number-4)*32+m_activitydot_xoffset, m_activity_yoffset+m_rowoffset);
-        }
+        m_display.setCursor(xoffset+m_activitydot_xoffset, yoffset);
         m_display.print("*");
 
         // draw port value
-        if (port_number < 4) {
-            m_display.fillRect(port_number*32+m_port_value_xoffset, m_activity_yoffset, 12, 10, SSD1306_BLACK);
-            m_display.setCursor(port_number*32+m_port_value_xoffset, m_activity_yoffset);
-        } else {
-            m_display.fillRect((port_number-4)*32+m_port_value_xoffset, m_activity_yoffset+m_rowoffset, 12, 10, SSD1306_BLACK);
-            m_display.setCursor((port_number-4)*32+m_port_value_xoffset, m_activity_yoffset+m_rowoffset);
-        }
+        m_display.fillRect(xoffset+m_port_value_xoffset, yoffset, 12, 10, SSD1306_BLACK);
+        m_display.setCursor(xoffset+m_port_value_xoffset, yoffset);
         m_display.print(port_value);
 
     }
 
     void over_view::draw_inactivity(const int port_number) const {
-        m_display.setTextSize(1);
 
         // draw black rectangle over activity dot
         if (port_number < 4) {
@@ -132,7 +133,6 @@ namespace midimagic {
         } else {
             m_display.fillRect((port_number-4)*32+m_activitydot_xoffset, m_activity_yoffset+m_rowoffset, 5, 10, SSD1306_BLACK);
         }
-        m_display.print(" ");
     }
 
     menu_state::menu_state()

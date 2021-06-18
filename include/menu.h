@@ -22,6 +22,7 @@ namespace midimagic {
             ROT_LEFT,
             ROT_RIGHT,
             ROT_BUTTON,
+            ROT_BUTTON_LONGPRESS,
             PORT_ACTIVE,
             PORT_NACTIVE,
         };
@@ -90,14 +91,20 @@ namespace midimagic {
 
         void register_view(std::shared_ptr<menu_view> m);
         void notify(const menu_action &a);
-        // FIXME Test debouncing
-        //Rotary encoder ISR timestamp
-        volatile unsigned long m_rot_int_ts;
-        //Rotary encoder threshold, ms
-        const unsigned int k_rot_int_th = 10;
 
     private:
         std::shared_ptr<menu_view> m_view;
+    };
+
+    class test_view : public menu_view {
+    public:
+        test_view(Adafruit_SSD1306 &d);
+        test_view(const test_view&) = delete;
+        virtual ~test_view();
+
+        virtual void notify(const menu_action &a) const override;
+    private:
+        mutable int m_i;
     };
 }
 

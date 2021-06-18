@@ -59,13 +59,19 @@ namespace midimagic {
                 m_display.display();
                 break;
             case menu_action::kind::PORT_ACTIVITY :
-                if (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
+                if        (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
                     draw_activity(a.m_data0, a.m_data1);
-                }
-                if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
+                } else if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
                     draw_inactivity(a.m_data0);
                 }
                 m_display.display();
+                break;
+            case menu_action::kind::ROT_ACTIVITY :
+                if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    //FIXME switch to pin_view
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    //FIXME switch to main menu
+                }
                 break;
             default :
                 // nothing to do
@@ -119,10 +125,11 @@ namespace midimagic {
         m_display.print("*");
 
         // draw port value
-        m_display.fillRect(xoffset+m_port_value_xoffset, yoffset, 12, 10, SSD1306_BLACK);
+        //FIXME display too slow
+        /* m_display.fillRect(xoffset+m_port_value_xoffset, yoffset, 12, 10, SSD1306_BLACK);
         m_display.setCursor(xoffset+m_port_value_xoffset, yoffset);
         m_display.print(port_value);
-
+        */
     }
 
     void over_view::draw_inactivity(const int port_number) const {
@@ -136,8 +143,7 @@ namespace midimagic {
     }
 
     menu_state::menu_state()
-        : m_rot_int_ts(0)
-        , m_view() {
+        : m_view() {
             // nothing to do
     }
 
@@ -149,5 +155,47 @@ namespace midimagic {
 
     void menu_state::notify(const menu_action &a) {
         m_view->notify(a);
+    }
+
+    test_view::test_view(Adafruit_SSD1306 &d)
+        : menu_view(d)
+        , m_i(0) {
+        // nothing to do
+    }
+
+    test_view::~test_view() {
+        // nothing to do
+    }
+
+    void test_view::notify(const menu_action &a) const {
+        m_display.clearDisplay();
+        m_display.setTextSize(3);
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.setCursor(0,0);
+                m_display.println(m_i);
+                break;
+            case menu_action::kind::ROT_ACTIVITY :
+                if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
+                    m_i--;
+                    m_display.setCursor(0,0);
+                    m_display.println(m_i);
+                } else if (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
+                    m_i++;
+                    m_display.setCursor(0,0);
+                    m_display.println(m_i);
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    m_display.setCursor(0,20);
+                    m_display.println("Short Press");
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    m_display.setCursor(0,20);
+                    m_display.println("Long Press ");
+                }
+                break;
+            default :
+                // nothing to do
+                break;
+        }
+        m_display.display();
     }
 }

@@ -8,6 +8,7 @@
 #include "midi_types.h"
 #include "output.h"
 #include "menu.h"
+#include "rotary.h"
 
 namespace midimagic {
     const u8 power_dacs = PB12;
@@ -50,6 +51,8 @@ namespace midimagic {
 
     identic_output_demux demux0;
 
+    rotary rotary;
+
     TwoWire disp_i2c(PB11, PB10);
     Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
 
@@ -69,28 +72,12 @@ void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
 
 void rot_clk_isr() {
     using namespace midimagic;
-    volatile int i = digitalRead(rot_dt);
-    // FIXME test following trivial debounce
-    volatile unsigned long current_millis = millis();
-    if (current_millis - menu->m_rot_int_ts > menu->k_rot_int_th) {
-        menu->m_rot_int_ts = current_millis;
-
-        if (i == HIGH) {
-            menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_LEFT);
-            menu->notify(a);
-        }
-        if (i == LOW) {
-            menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_RIGHT);
-            menu->notify(a);
-        }
-    }
+    rotary.signal_clk();
 }
 
 void rot_sw_isr() {
     using namespace midimagic;
-    // FIXME probably needs debouncing
-    const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_BUTTON);
-    menu->notify(a);
+    rotary.signal_sw();
 }
 
 void setup() {
@@ -104,19 +91,19 @@ void setup() {
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
     demux0.add_output(port0);
-    demux0.add_output(port1);
+    /*demux0.add_output(port1);
     demux0.add_output(port2);
     demux0.add_output(port3);
     demux0.add_output(port4);
     demux0.add_output(port5);
     demux0.add_output(port6);
-    demux0.add_output(port7);
+    demux0.add_output(port7); */
     // Set up interrupts
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);
     pinMode(rot_sw, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(rot_clk), rot_clk_isr, FALLING);
-    attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, FALLING);
+    attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, CHANGE);
     // Display boot screen
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     display.clearDisplay();

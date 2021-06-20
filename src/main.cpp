@@ -51,7 +51,7 @@ namespace midimagic {
 
     identic_output_demux demux0;
 
-    rotary rotary;
+    rotary rot(rot_dt, rot_sw, menu);
 
     TwoWire disp_i2c(PB11, PB10);
     Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
@@ -72,12 +72,12 @@ void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
 
 void rot_clk_isr() {
     using namespace midimagic;
-    rotary.signal_clk();
+    rot.signal_clk();
 }
 
 void rot_sw_isr() {
     using namespace midimagic;
-    rotary.signal_sw();
+    rot.signal_sw();
 }
 
 void setup() {

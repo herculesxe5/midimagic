@@ -7,17 +7,22 @@
 
 namespace midimagic {
 
-    extern const u8 rot_dt;
-    extern const u8 rot_sw;
-    extern std::shared_ptr<menu_state> menu;
-
-
     class rotary {
     public:
+        explicit rotary(const u8 data_pin, const u8 switch_pin,
+                        std::shared_ptr<menu_state> ms);
+        rotary() = delete;
+        rotary(const rotary&) = delete;
+        ~rotary();
+
         void signal_clk();
         void signal_sw();
 
     private:
+        const u8 m_data_pin;
+        const u8 m_switch_pin;
+        std::shared_ptr<menu_state> m_menu_state;
+
         volatile int m_rot_dtstate;
         volatile int m_rot_swstate;
         volatile unsigned long m_current_millis;

@@ -14,8 +14,9 @@ namespace midimagic {
         // nothing to do
     }
 
-    menu_view::menu_view(Adafruit_SSD1306 &d)
-        : m_display(d) {
+    menu_view::menu_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state)
+        : m_display(d)
+        , m_menu_state(menu_state) {
         // nothing to do
     }
 
@@ -23,8 +24,8 @@ namespace midimagic {
         // nothing to do
     }
 
-    pin_view::pin_view(u8 pin, Adafruit_SSD1306 &d)
-        : menu_view(d)
+    pin_view::pin_view(u8 pin, Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state)
+        : menu_view(d, menu_state)
         , m_pin(pin) {
         // nothing to do
     }
@@ -34,11 +35,16 @@ namespace midimagic {
     }
 
     void pin_view::notify(const menu_action &a) const {
-
+        m_display.clearDisplay();
+        m_display.setCursor(0,0);
+        m_display.setTextColor(SSD1306_WHITE);
+        m_display.setTextSize(1);
+        m_display.println("Pin View");
+        m_display.display();
     }
 
-    over_view::over_view(Adafruit_SSD1306 &d)
-        : menu_view(d)
+    over_view::over_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state)
+        : menu_view(d, menu_state)
         , m_rowoffset(32)
         , m_activitydot_xoffset(4)
         , m_port_value_xoffset(12)
@@ -69,6 +75,8 @@ namespace midimagic {
             case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     //FIXME switch to pin_view
+                    auto v = std::make_shared<pin_view>(1, m_display, m_menu_state);
+                    m_menu_state->register_view(v);
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
                     //FIXME switch to main menu
                 }
@@ -155,47 +163,5 @@ namespace midimagic {
 
     void menu_state::notify(const menu_action &a) {
         m_view->notify(a);
-    }
-
-    test_view::test_view(Adafruit_SSD1306 &d)
-        : menu_view(d)
-        , m_i(0) {
-        // nothing to do
-    }
-
-    test_view::~test_view() {
-        // nothing to do
-    }
-
-    void test_view::notify(const menu_action &a) const {
-        m_display.clearDisplay();
-        m_display.setTextSize(3);
-        switch (a.m_kind) {
-            case menu_action::kind::UPDATE :
-                m_display.setCursor(0,0);
-                m_display.println(m_i);
-                break;
-            case menu_action::kind::ROT_ACTIVITY :
-                if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
-                    m_i--;
-                    m_display.setCursor(0,0);
-                    m_display.println(m_i);
-                } else if (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
-                    m_i++;
-                    m_display.setCursor(0,0);
-                    m_display.println(m_i);
-                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
-                    m_display.setCursor(0,20);
-                    m_display.println("Short Press");
-                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
-                    m_display.setCursor(0,20);
-                    m_display.println("Long Press ");
-                }
-                break;
-            default :
-                // nothing to do
-                break;
-        }
-        m_display.display();
     }
 }

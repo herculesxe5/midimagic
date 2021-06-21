@@ -117,7 +117,7 @@ void setup() {
     display.display();
     // Wait 3 sec before display refresh
     delay(3000);
-    auto v = std::make_shared<over_view>(display);
+    auto v = std::make_shared<over_view>(display, menu);
     menu->register_view(v);
 }
 

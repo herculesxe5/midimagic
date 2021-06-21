@@ -37,9 +37,11 @@ namespace midimagic {
 
     };
 
+    class menu_state;
+
     class menu_view {
     public:
-        explicit menu_view(Adafruit_SSD1306 &d);
+        explicit menu_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
         menu_view() = delete;
         menu_view(const menu_view&) = delete;
         virtual ~menu_view();
@@ -48,11 +50,12 @@ namespace midimagic {
 
     protected:
         Adafruit_SSD1306 &m_display;
+        std::shared_ptr<menu_state> m_menu_state;
     };
 
     class pin_view : public menu_view {
     public:
-        explicit pin_view(u8 pin, Adafruit_SSD1306 &d);
+        explicit pin_view(u8 pin, Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
         pin_view() = delete;
         pin_view(const pin_view&) = delete;
         virtual ~pin_view();
@@ -65,7 +68,7 @@ namespace midimagic {
 
     class over_view : public menu_view {
     public:
-        over_view(Adafruit_SSD1306 &d);
+        over_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
         over_view(const over_view&) = delete;
         virtual ~over_view();
 
@@ -85,7 +88,6 @@ namespace midimagic {
 
     class menu_state {
     public:
-
         menu_state();
         menu_state(const menu_state&) = delete;
 
@@ -94,17 +96,6 @@ namespace midimagic {
 
     private:
         std::shared_ptr<menu_view> m_view;
-    };
-
-    class test_view : public menu_view {
-    public:
-        test_view(Adafruit_SSD1306 &d);
-        test_view(const test_view&) = delete;
-        virtual ~test_view();
-
-        virtual void notify(const menu_action &a) const override;
-    private:
-        mutable int m_i;
     };
 }
 

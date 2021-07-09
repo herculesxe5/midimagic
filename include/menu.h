@@ -3,9 +3,11 @@
 
 #include <memory>
 
-#include <Adafruit_SSD1306.h>
+#include <lcdgfx.h>
+#include <lcdgfx_gui.h>
 
 #include "common.h"
+#include "bitmaps.h"
 
 namespace midimagic {
 
@@ -41,47 +43,56 @@ namespace midimagic {
 
     class menu_view {
     public:
-        explicit menu_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
+        explicit menu_view(DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
         menu_view() = delete;
         menu_view(const menu_view&) = delete;
         virtual ~menu_view();
 
-        virtual void notify(const menu_action &a) const = 0;
+        virtual void notify(const menu_action &a) = 0;
 
     protected:
-        Adafruit_SSD1306 &m_display;
+        DisplaySSD1306_128x64_I2C &m_display;
         std::shared_ptr<menu_state> m_menu_state;
     };
 
     class pin_view : public menu_view {
     public:
-        explicit pin_view(u8 pin, Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
+        explicit pin_view(u8 pin, DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
         pin_view() = delete;
         pin_view(const pin_view&) = delete;
         virtual ~pin_view();
 
-        virtual void notify(const menu_action &a) const override;
+        virtual void notify(const menu_action &a) override;
 
     private:
         u8 m_pin;
+        const char *m_menu_items[6];
+        const NanoRect m_pin_menu_dimensions;
+        std::shared_ptr<LcdGfxMenu> pin_menu;
     };
 
     class over_view : public menu_view {
     public:
-        over_view(Adafruit_SSD1306 &d, std::shared_ptr<menu_state> menu_state);
+        over_view(DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
         over_view(const over_view&) = delete;
         virtual ~over_view();
 
-        virtual void notify(const menu_action &a) const override;
+        virtual void notify(const menu_action &a) override;
 
     private:
-        // Pixel offsets from cell border for port activity
+        u8 m_pin_select;
+
+        // Pixel offsets for pin selection and activity
         const uint8_t m_rowoffset;
         const uint8_t m_activitydot_xoffset;
         const uint8_t m_port_value_xoffset;
         const uint8_t m_activity_yoffset;
+        const uint8_t m_selection_xcelloffset;
+        const uint8_t m_selection_yoffset;
 
         void draw_statics() const;
+        void draw_pin_select() const;
+        void draw_pin_deselect() const;
         void draw_activity(const int port_number, const int port_value) const;
         void draw_inactivity(const int port_number) const;
     };

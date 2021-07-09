@@ -2,7 +2,6 @@
 #define MIDIMAGIC_ROTARY_H
 
 #include "common.h"
-
 #include "menu.h"
 
 namespace midimagic {

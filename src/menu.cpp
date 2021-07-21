@@ -27,13 +27,13 @@ namespace midimagic {
     pin_view::pin_view(u8 pin, DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state)
         : menu_view(d, menu_state)
         , m_pin(pin)
-        , m_menu_items {"menu item 1",
+        , m_menu_items({"menu item 1",
                         "menu item 2",
                         "menu item 3",
                         "menu item 4",
                         "menu item 5",
-                        "menu item 6",}
-        , m_pin_menu_dimensions{NanoPoint{0, 8}, NanoPoint{127, 63}}
+                        "menu item 6"})
+        , m_pin_menu_dimensions({NanoPoint{0, 8}, NanoPoint{127, 63}})
         {
         pin_menu = std::make_shared<LcdGfxMenu>(m_menu_items, 6, m_pin_menu_dimensions);
     }
@@ -149,7 +149,7 @@ namespace midimagic {
     void over_view::draw_pin_select() const {
         // draw selection marker bitmap
         if (m_pin_select < 5) {
-            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset, 
+            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset,
                                 m_selection_yoffset, sizeof(arrow_down), 8, arrow_down);
         } else {
             m_display.drawBitmap1((m_pin_select-1-4)*32+m_selection_xcelloffset,
@@ -160,7 +160,7 @@ namespace midimagic {
     void over_view::draw_pin_deselect() const {
         // overwrite selection marker with black bitmap
         if (m_pin_select < 5) {
-            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset, 
+            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset,
                                 m_selection_yoffset, sizeof(black_rect_5x8), 8, black_rect_5x8);
         } else {
             m_display.drawBitmap1((m_pin_select-1-4)*32+m_selection_xcelloffset,

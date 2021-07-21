@@ -8,6 +8,12 @@
 #include <memory>
 
 namespace midimagic {
+    enum demux_type {
+        RANDOM = 0,
+        IDENTIC,
+        FIFO
+    };
+
     class midi_message;
     class ad57x4;
 
@@ -15,6 +21,7 @@ namespace midimagic {
     public:
         explicit output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
                              std::shared_ptr<menu_state> menu, u8 port_number);
+        //output_port(output_port&&) = default;
         output_port() = delete;
 
         bool is_active();
@@ -22,6 +29,7 @@ namespace midimagic {
         void set_note(midi_message &note_on_msg);
         u8   get_note();
         void end_note();
+        const u8 get_digital_pin() const;
 
     private:
         u8 m_digital_pin;
@@ -42,10 +50,12 @@ namespace midimagic {
         virtual void add_note(midi_message& msg) = 0;
 
         virtual void add_output(output_port p);
+        virtual void remove_output(u8 digital_pin);
         virtual void remove_note(midi_message& msg);
+        const std::vector<std::unique_ptr<output_port>>& get_output() const;
     protected:
         bool set_note(midi_message &msg);
-        std::vector<output_port> m_ports;
+        std::vector<std::unique_ptr<output_port>> m_ports;
         std::vector<midi_message> m_msgs;
     };
 
@@ -67,6 +77,7 @@ namespace midimagic {
     };
 
     class fifo_output_demux : public output_demux {
+    public:
         fifo_output_demux();
         fifo_output_demux(const fifo_output_demux&) = delete;
         virtual ~fifo_output_demux();

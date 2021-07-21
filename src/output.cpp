@@ -49,6 +49,10 @@ namespace midimagic {
         m_menu->notify(a);
     }
 
+    const u8 output_port::get_digital_pin() const {
+        return m_digital_pin;
+    }
+
     output_demux::output_demux() {
         // nothing to do
     }
@@ -58,13 +62,28 @@ namespace midimagic {
     }
 
     void output_demux::add_output(output_port p) {
-        m_ports.emplace_back(p);
+        m_ports.emplace_back(std::make_unique<output_port>(p));
+    }
+
+    const std::vector<std::unique_ptr<output_port>>& output_demux::get_output() const {
+        return m_ports;
+    }
+
+    void output_demux::remove_output(u8 digital_pin) {
+        for (auto it = m_ports.begin(); it != m_ports.end(); ) {
+            if ((*it)->get_digital_pin() == digital_pin) {
+                it = m_ports.erase(it);
+                return;
+            } else {
+                ++it;
+            }
+        }
     }
 
     void output_demux::remove_note(midi_message &msg) {
         for(auto &port: m_ports) {
-            if (port.is_note(msg)) {
-                port.end_note();
+            if (port->is_note(msg)) {
+                port->end_note();
             }
         }
         for(auto it = m_msgs.begin(); it != m_msgs.end();) {
@@ -79,8 +98,8 @@ namespace midimagic {
         if (m_msgs.size() == m_ports.size())
             return false;
         for (auto &port: m_ports) {
-            if (!port.is_active()) {
-                port.set_note(msg);
+            if (!port->is_active()) {
+                port->set_note(msg);
                 m_msgs.push_back(msg);
                 return true;
             }
@@ -101,8 +120,8 @@ namespace midimagic {
             int rand = std::rand() % m_msgs.size();
             midi_message tmp = m_msgs[rand];
             for (auto &port: m_ports) {
-                if (port.is_note(tmp)) {
-                    port.set_note(msg);
+                if (port->is_note(tmp)) {
+                    port->set_note(msg);
                     m_msgs.push_back(msg);
                 }
             }
@@ -125,7 +144,7 @@ namespace midimagic {
 
     void identic_output_demux::add_note(midi_message &msg) {
         for (auto &port: m_ports) {
-            port.set_note(msg);
+            port->set_note(msg);
         }
     }
 
@@ -141,8 +160,8 @@ namespace midimagic {
         if (!set_note(msg)) {
             midi_message tmp = m_msgs.front();
             for (auto &port: m_ports) {
-                if (port.is_note(tmp)) {
-                    port.set_note(msg);
+                if (port->is_note(tmp)) {
+                    port->set_note(msg);
                     m_msgs.push_back(msg);
                 }
             }

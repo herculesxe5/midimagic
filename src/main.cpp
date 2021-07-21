@@ -41,7 +41,7 @@ namespace midimagic {
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
     std::shared_ptr<menu_state> menu(new menu_state);
-    
+    /*
     output_port port0(port0_pin, ad57x4::CHANNEL_A, dac1, menu, 0);
     output_port port1(port1_pin, ad57x4::CHANNEL_B, dac1, menu, 1);
     output_port port2(port2_pin, ad57x4::CHANNEL_C, dac1, menu, 2);
@@ -52,10 +52,10 @@ namespace midimagic {
     output_port port7(port7_pin, ad57x4::CHANNEL_D, dac0, menu, 7);
 
     identic_output_demux demux0;
-
+    */
     rotary rot(rot_dt, rot_sw, menu);
 
-    const SPlatformI2cConfig display_config = (SPlatformI2cConfig) 
+    const SPlatformI2cConfig display_config = (SPlatformI2cConfig)
                                           { .busId = 2,
                                             .addr = 0x3C,
                                             .scl = disp_scl,
@@ -69,13 +69,15 @@ namespace midimagic {
 void handleNoteOn(byte midi_channel, byte midi_note, byte midi_velo) {
     using namespace midimagic;
     midi_message msg(midi_message::NOTE_ON, midi_channel, midi_note, midi_velo);
-    demux0.add_note(msg);
+    //FIXME call port_group dispatcher
+    //demux0.add_note(msg);
 }
 
 void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
     using namespace midimagic;
     midi_message msg(midi_message::NOTE_OFF, midi_channel, midi_note, midi_velo);
-    demux0.remove_note(msg);
+    //FIXME call port_group dispatcher
+    //demux0.remove_note(msg);
 }
 
 void rot_clk_isr() {
@@ -98,14 +100,14 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
-    demux0.add_output(port0);
+    /*demux0.add_output(port0);
     demux0.add_output(port1);
     demux0.add_output(port2);
     demux0.add_output(port3);
     demux0.add_output(port4);
     demux0.add_output(port5);
     demux0.add_output(port6);
-    demux0.add_output(port7);
+    demux0.add_output(port7);*/
     // Set up interrupts
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);

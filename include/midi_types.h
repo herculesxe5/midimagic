@@ -15,12 +15,12 @@ struct midi_message {
         CHANNEL_PRESSURE,
         PITCH_BEND
     };
-    u8 type;
+    message_type type;
     u8 channel;
     u8 data0;
     u8 data1;
 
-    midi_message(u8 type, u8 channel, u8 data0, u8 data1) :
+    midi_message(message_type type, u8 channel, u8 data0, u8 data1) :
         type(type),
         channel(channel),
         data0(data0),

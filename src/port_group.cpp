@@ -10,10 +10,9 @@ namespace midimagic {
         // nothing to do
     }
 
-    void group_dispatcher::add_port_group(const demux_type dt,
-                        const midi_message::message_type msg_type, const u8 channel) {
+    void group_dispatcher::add_port_group(const demux_type dt, const u8 channel) {
         m_port_groups.emplace_back(
-            std::make_unique<port_group>(get_next_id(), dt, msg_type, channel));
+            std::make_unique<port_group>(get_next_id(), dt, channel));
     }
 
     void group_dispatcher::remove_port_group(const u8 id) {
@@ -48,11 +47,9 @@ namespace midimagic {
         return ++m_last_group_id;
     }
 
-    port_group::port_group(const u8 id, const demux_type dt,
-                           const midi_message::message_type msg_type, const u8 channel)
-        : m_id(id)
+    port_group::port_group(const u8 id, const demux_type dt, const u8 channel)
+        : k_id(id)
         , m_input_channel(channel) {
-        m_input_types.push_back(msg_type);
         set_demux(dt);
     }
 
@@ -63,13 +60,13 @@ namespace midimagic {
     void port_group::set_demux(const demux_type type) {
         switch (type) {
             case demux_type::FIFO:
-                m_demux = std::make_unique<fifo_output_demux>();
+                m_demux = std::make_unique<fifo_output_demux>(type);
                 break;
             case demux_type::IDENTIC:
-                m_demux = std::make_unique<identic_output_demux>();
+                m_demux = std::make_unique<identic_output_demux>(type);
                 break;
             case demux_type::RANDOM:
-                m_demux = std::make_unique<random_output_demux>();
+                m_demux = std::make_unique<random_output_demux>(type);
                 break;
             default:
                 __builtin_trap();
@@ -77,19 +74,25 @@ namespace midimagic {
         }
     }
 
+    void port_group::set_midi_channel(const u8 ch) {
+        m_input_channel = ch;
+    }
+
     const output_demux& port_group::get_demux() const {
         return *m_demux;
     }
 
-    void port_group::add_midi_input(const midi_message input_type) {
-        m_input_types.push_back(input_type.type);
-        m_input_channel = input_type.channel;
+    void port_group::add_midi_input(const midi_message::message_type input_type) {
+        if (!has_msg_type(input_type)) {
+            m_input_types.push_back(input_type);
+        }
     }
 
-    void port_group::remove_msg_type(const midi_message input_type) {
+    void port_group::remove_msg_type(const midi_message::message_type input_type) {
         for (auto it = m_input_types.begin(); it != m_input_types.end(); ) {
-            if (*it == input_type.type) {
+            if (*it == input_type) {
                 it = m_input_types.erase(it);
+                return;
             } else {
                 ++it;
             }
@@ -124,10 +127,14 @@ namespace midimagic {
     }
 
     const u8 port_group::get_id() const {
-        return m_id;
+        return k_id;
     }
 
     void port_group::send_input(midi_message& m) {
-        m_demux->add_note(m);
+        if (m.type == midi_message::message_type::NOTE_OFF) {
+            m_demux->remove_note(m);
+        } else {
+            m_demux->add_note(m);
+        }
     }
 } // namespace midimagic

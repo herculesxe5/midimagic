@@ -15,6 +15,7 @@ struct midi_message {
         CHANNEL_PRESSURE,
         PITCH_BEND
     };
+
     message_type type;
     u8 channel;
     u8 data0;
@@ -33,6 +34,20 @@ struct midi_message {
         else
             return false;
     };
+};
+
+static const char *midi_message_type_names[] = {
+    "Note Off",
+    "Note On",
+    "Pol Key Press",
+    "Control Change",
+    "Program Change",
+    "Channel Press",
+    "Pitch Bend"
+};
+
+static const char* midi_msgtype2name(const midi_message::message_type type) {
+    return midi_message_type_names[type-0x8];
 };
 
 } // namespace midimagic

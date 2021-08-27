@@ -1,18 +1,36 @@
 #include "output.h"
 #include "midi_types.h"
 #include "ad57x4.h"
+#include "menu.h"
 #include <cstdlib>
 
 namespace midimagic {
+    const char *demux_type_names[] = {
+        "Random",
+        "Identic",
+        "FIFO"
+    };
+
+    demux_type& operator++(demux_type& dt) {
+        return dt = (dt == demux_type::FIFO) ? demux_type::RANDOM : static_cast<demux_type>(static_cast<int>(dt)+1);
+    }
+
+    demux_type& operator--(demux_type& dt) {
+        return dt = (dt == demux_type::RANDOM) ? demux_type::FIFO : static_cast<demux_type>(static_cast<int>(dt)-1);
+    }
+
+    const char* demux_type2name(demux_type type) {
+        return demux_type_names[type];
+    }
+
     output_port::output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
-                             std::shared_ptr<menu_state> menu, u8 port_number)
+                             std::shared_ptr<menu_action_queue> menu, u8 port_number)
         : m_digital_pin(digital_pin)
         , m_dac_channel(dac_channel)
         , m_dac(dac)
         , m_current_note(255)
         , m_menu(menu)
-        , m_port_number(port_number)
-        , m_menu_action_kind(menu_action::kind::PORT_ACTIVITY) {
+        , m_port_number(port_number) {
         pinMode(m_digital_pin, OUTPUT);
     }
 
@@ -32,9 +50,9 @@ namespace midimagic {
         i16 steps = delta * 136 << 2;
         m_dac.set_level(steps, m_dac_channel);
         digitalWrite(m_digital_pin, HIGH);
-        //send port activity info to current view
-        menu_action a(m_menu_action_kind, menu_action::subkind::PORT_ACTIVE, m_port_number, m_current_note);
-        m_menu->notify(a);
+        // send port activity info to current view
+        menu_action a(menu_action::kind::PORT_ACTIVITY, menu_action::subkind::PORT_ACTIVE, m_port_number, m_current_note);
+        m_menu->add_menu_action(a);
     }
 
     u8 output_port::get_note() {
@@ -45,15 +63,20 @@ namespace midimagic {
         m_current_note = 255;
         digitalWrite(m_digital_pin, LOW);
         //send port activity info to current view
-        menu_action a(m_menu_action_kind, menu_action::subkind::PORT_NACTIVE, m_port_number);
-        m_menu->notify(a);
+        menu_action a(menu_action::kind::PORT_ACTIVITY, menu_action::subkind::PORT_NACTIVE, m_port_number);
+        m_menu->add_menu_action(a);
     }
 
     const u8 output_port::get_digital_pin() const {
         return m_digital_pin;
     }
 
-    output_demux::output_demux() {
+    const u8 output_port::get_port_number() const {
+        return m_port_number;
+    }
+
+    output_demux::output_demux(const demux_type type)
+        : m_type(type) {
         // nothing to do
     }
 
@@ -67,6 +90,10 @@ namespace midimagic {
 
     const std::vector<std::unique_ptr<output_port>>& output_demux::get_output() const {
         return m_ports;
+    }
+
+    const demux_type output_demux::get_type() const {
+        return m_type;
     }
 
     void output_demux::remove_output(u8 digital_pin) {
@@ -107,7 +134,8 @@ namespace midimagic {
         return false;
     }
 
-    random_output_demux::random_output_demux() {
+    random_output_demux::random_output_demux(const demux_type type)
+        : output_demux(type) {
         // nothing to do
     }
 
@@ -134,7 +162,8 @@ namespace midimagic {
         }
     }
 
-    identic_output_demux::identic_output_demux() {
+    identic_output_demux::identic_output_demux(const demux_type type)
+        : output_demux(type) {
         // nothing to do
     }
 
@@ -148,7 +177,8 @@ namespace midimagic {
         }
     }
 
-    fifo_output_demux::fifo_output_demux() {
+    fifo_output_demux::fifo_output_demux(const demux_type type)
+        : output_demux(type) {
         // nothing to do
     }
 

@@ -2,14 +2,15 @@
 #define MIDIMAGIC_ROTARY_H
 
 #include "common.h"
-#include "menu.h"
+#include "menu_action_queue.h"
+#include <memory>
 
 namespace midimagic {
 
     class rotary {
     public:
         explicit rotary(const u8 data_pin, const u8 switch_pin,
-                        std::shared_ptr<menu_state> ms);
+                        std::shared_ptr<menu_action_queue> aq);
         rotary() = delete;
         rotary(const rotary&) = delete;
         ~rotary();
@@ -20,7 +21,7 @@ namespace midimagic {
     private:
         const u8 m_data_pin;
         const u8 m_switch_pin;
-        std::shared_ptr<menu_state> m_menu_state;
+        std::shared_ptr<menu_action_queue> m_action_queue;
 
         volatile int m_rot_dtstate;
         volatile int m_rot_swstate;

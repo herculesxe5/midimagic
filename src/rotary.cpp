@@ -2,10 +2,10 @@
 
 namespace midimagic {
 
-    rotary::rotary(const u8 data_pin, const u8 switch_pin, std::shared_ptr<menu_state> ms)
+    rotary::rotary(const u8 data_pin, const u8 switch_pin, std::shared_ptr<menu_action_queue> aq)
         : m_data_pin(data_pin)
         , m_switch_pin(switch_pin)
-        , m_menu_state(ms) {
+        , m_action_queue(aq) {
         // nothing to do
     }
 
@@ -21,11 +21,11 @@ namespace midimagic {
 
             if (m_rot_dtstate == HIGH) {
                 const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_LEFT);
-                m_menu_state->notify(a);
+                m_action_queue->add_menu_action(a);
             }
             else if (m_rot_dtstate == LOW) {
                 const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_RIGHT);
-                m_menu_state->notify(a);
+                m_action_queue->add_menu_action(a);
             }
         }
     }
@@ -38,11 +38,11 @@ namespace midimagic {
         } else {
             if (m_current_millis - m_rot_sw_ts > k_rot_lp) {
                 const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_BUTTON_LONGPRESS);
-                m_menu_state->notify(a);
+                m_action_queue->add_menu_action(a);
             }
             else if (m_current_millis - m_rot_sw_ts > k_rot_int_th) {
                 const menu_action a(menu_action::kind::ROT_ACTIVITY, menu_action::subkind::ROT_BUTTON);
-                m_menu_state->notify(a);
+                m_action_queue->add_menu_action(a);
             }
         }
     }

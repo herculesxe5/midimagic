@@ -1,7 +1,7 @@
 #include "inventory.h"
 #include "common.h"
 namespace midimagic {
-    inventory::inventory(group_dispatcher& gd,
+    inventory::inventory(std::shared_ptr<group_dispatcher> gd,
                         std::shared_ptr<menu_action_queue> menu_q,
                         ad57x4 &dac0,
                         ad57x4 &dac1)
@@ -12,7 +12,7 @@ namespace midimagic {
         // nothing to do
     }
 
-    inventory::inventory(group_dispatcher& gd,
+    inventory::inventory(std::shared_ptr<group_dispatcher> gd,
                         std::shared_ptr<menu_action_queue> menu_q,
                         ad57x4 &dac0,
                         ad57x4 &dac1,
@@ -50,7 +50,12 @@ namespace midimagic {
         return m_system_ports.back();
     }
 
+    std::shared_ptr<group_dispatcher> inventory::get_group_dispatcher() {
+        return m_group_dispatcher;
+    }
+
     void inventory::apply_config(const struct system_config& new_config) {
+        //FIXME check config for sane values
         flush();
         //overwrite old system_config with new_config
         m_system_config = new_config;
@@ -64,12 +69,17 @@ namespace midimagic {
         for (auto &pg_config: m_system_config.system_port_groups) {
             u8 new_pg_id = spawn_port_group(config_pg_it_by_id(pg_config.id));
         }
+        // iterate through the created system port groups and update ids in system_config
+        auto& system_portgroups = m_group_dispatcher->get_port_groups();
+        for (u8 i = 0; i < system_portgroups.size(); i++) {
+            m_system_config.system_port_groups.at(i).id = system_portgroups.at(i)->get_id();
+        }
     }
 
     void inventory::flush() {
-        auto& pg_vector = m_group_dispatcher.get_port_groups();
+        auto& pg_vector = m_group_dispatcher->get_port_groups();
         while (!pg_vector.empty()) {
-            m_group_dispatcher.remove_port_group((pg_vector.back())->get_id());
+            m_group_dispatcher->remove_port_group((pg_vector.back())->get_id());
         }
         m_system_config.system_port_groups.clear();
     }
@@ -98,8 +108,8 @@ namespace midimagic {
     }
 
     const u8 inventory::spawn_port_group(std::vector<struct port_group_config>::iterator config_pg_it) {
-        m_group_dispatcher.add_port_group(config_pg_it->demux, config_pg_it->midi_channel);
-        auto& new_pg = (m_group_dispatcher.get_port_groups()).back();
+        m_group_dispatcher->add_port_group(config_pg_it->demux, config_pg_it->midi_channel);
+        auto& new_pg = (m_group_dispatcher->get_port_groups()).back();
         // add the midi inputs
         for (auto &msg_type: config_pg_it->input_types) {
             new_pg->add_midi_input(msg_type);
@@ -112,9 +122,7 @@ namespace midimagic {
                 }
             }
         }
-        // update the newly assigned id in system_config to reflect the system setup
-        config_pg_it->id = new_pg->get_id();
-        return config_pg_it->id;
+        return new_pg->get_id();
     }
 
     void inventory::rescan_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
@@ -148,16 +156,17 @@ namespace midimagic {
             if (it->id == config_pg_id) {
                 return it;
             }
-
+            ++it;
         }
     }
 
     const std::vector<std::unique_ptr<port_group>>::const_iterator inventory::system_pg_it_by_id(const u8 system_pg_id) const {
-        for (auto it = m_group_dispatcher.get_port_groups().begin();
-            it != m_group_dispatcher.get_port_groups().end(); ) {
+        for (auto it = m_group_dispatcher->get_port_groups().begin();
+            it != m_group_dispatcher->get_port_groups().end(); ) {
             if ((*it)->get_id() == system_pg_id) {
                 return it;
             }
+            ++it;
         }
     }
 

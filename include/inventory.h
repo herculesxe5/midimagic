@@ -9,6 +9,7 @@
 
 namespace midimagic {
     class inventory {
+    public:
         const u8 port_number2digital_pin[8] {
             PB9, // port0
             PB8, // port1
@@ -21,7 +22,6 @@ namespace midimagic {
         };
         struct output_port_config {
             u8 port_number;
-            ad57x4::dac_channel dac_channel;
         };
 
         struct port_group_config {
@@ -37,12 +37,11 @@ namespace midimagic {
             std::vector<struct port_group_config> system_port_groups;
         };
 
-    public:
-        inventory(group_dispatcher& gd,
+        inventory(std::shared_ptr<group_dispatcher> gd,
                   std::shared_ptr<menu_action_queue> menu_q,
                   ad57x4 &dac0,
                   ad57x4 &dac1);
-        inventory(group_dispatcher& gd,
+        inventory(std::shared_ptr<group_dispatcher> gd,
                   std::shared_ptr<menu_action_queue> menu_q,
                   ad57x4 &dac0,
                   ad57x4 &dac1,
@@ -55,9 +54,10 @@ namespace midimagic {
         void submit_portgroup_delete(const u8 system_pg_id); // inform inventory about deleted port group, updates system config
         void submit_portgroup_add(const u8 system_pg_id); // inform inventory about new port group, updates system config
         const output_port& get_output_port(const u8 port_number); // returns reference to output_port by port number, creates object if needed
+        std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         void apply_config(const struct system_config& new_config); // setup system as in new_config
     private:
-        group_dispatcher& m_group_dispatcher;
+        std::shared_ptr<group_dispatcher> m_group_dispatcher;
         std::shared_ptr<menu_action_queue> m_menu_q;
         ad57x4 &m_dac0, &m_dac1;
         struct system_config m_system_config;
@@ -84,4 +84,4 @@ namespace midimagic {
         const bool port_exists(const u8 port_number) const;
     };
 } // namespace midimagic
-#endif //MIDIMAGIC_INVENTORY_H
+#endif // MIDIMAGIC_INVENTORY_H

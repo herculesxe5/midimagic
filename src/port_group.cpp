@@ -122,8 +122,8 @@ namespace midimagic {
         m_demux->add_output(port);
     }
 
-    void port_group::remove_port(u8 digital_pin) {
-        m_demux->remove_output(digital_pin);
+    void port_group::remove_port(u8 port_number) {
+        m_demux->remove_output(port_number);
     }
 
     const u8 port_group::get_id() const {

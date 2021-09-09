@@ -46,7 +46,7 @@ namespace midimagic {
         const bool has_msg_type(const midi_message::message_type msg_type) const;
 
         void add_port(output_port port);
-        void remove_port(u8 digital_pin);
+        void remove_port(u8 port_number);
         const u8 get_id() const;
 
         void send_input(midi_message& m);

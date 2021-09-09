@@ -85,6 +85,7 @@ namespace midimagic {
     }
 
     void output_demux::add_output(output_port p) {
+        //FIXME check if port is already assigned
         m_ports.emplace_back(std::make_unique<output_port>(p));
     }
 
@@ -96,9 +97,9 @@ namespace midimagic {
         return m_type;
     }
 
-    void output_demux::remove_output(u8 digital_pin) {
+    void output_demux::remove_output(u8 port_number) {
         for (auto it = m_ports.begin(); it != m_ports.end(); ) {
-            if ((*it)->get_digital_pin() == digital_pin) {
+            if ((*it)->get_port_number() == port_number) {
                 it = m_ports.erase(it);
                 return;
             } else {

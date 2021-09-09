@@ -53,7 +53,7 @@ namespace midimagic {
         virtual void add_note(midi_message& msg) = 0;
 
         virtual void add_output(output_port p);
-        virtual void remove_output(u8 digital_pin);
+        virtual void remove_output(u8 port_number);
         virtual void remove_note(midi_message& msg);
         const std::vector<std::unique_ptr<output_port>>& get_output() const;
         const demux_type get_type() const;

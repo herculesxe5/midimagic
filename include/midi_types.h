@@ -39,10 +39,20 @@ struct midi_message {
 static const char *midi_message_type_names[] = {
     "Note Off",
     "Note On",
-    "Pol Key Press",
+    "Pol Key Pr",
+    "Contr Chg",
+    "Progr Chg",
+    "Chan Press",
+    "Pitch Bend"
+};
+
+static const char *midi_message_type_long_names[] = {
+    "Note Off",
+    "Note On",
+    "Polyphonic Key Press",
     "Control Change",
     "Program Change",
-    "Channel Press",
+    "Channel Pressure",
     "Pitch Bend"
 };
 

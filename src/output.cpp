@@ -85,7 +85,11 @@ namespace midimagic {
     }
 
     void output_demux::add_output(output_port p) {
-        //FIXME check if port is already assigned
+        for (auto& port: m_ports) {
+            if (port->get_port_number() == p.get_port_number()) {
+                return;
+            }
+        }
         m_ports.emplace_back(std::make_unique<output_port>(p));
     }
 

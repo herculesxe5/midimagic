@@ -33,7 +33,7 @@ namespace midimagic {
         //Rotary encoder threshold, ms
         const unsigned int k_rot_int_th = 50;
         //Rotary switch long press duration, ms
-        const unsigned int k_rot_lp = 1000;
+        const unsigned int k_rot_lp = 500;
     };
 }
 

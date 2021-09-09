@@ -8,42 +8,18 @@
 
 #include "common.h"
 #include "bitmaps.h"
+#include "port_group.h"
+#include "inventory.h"
+#include "menu_interface.h"
 
 namespace midimagic {
-
-    struct menu_action {
-
-        enum kind {
-            UPDATE,
-            PORT_ACTIVITY,
-            ROT_ACTIVITY,
-        };
-
-        enum subkind {
-            NO_SUB,
-            ROT_LEFT,
-            ROT_RIGHT,
-            ROT_BUTTON,
-            ROT_BUTTON_LONGPRESS,
-            PORT_ACTIVE,
-            PORT_NACTIVE,
-        };
-        explicit menu_action(kind k, subkind sk, int d0 = 0, int d1 = 0);
-        menu_action() = delete;
-        menu_action(const menu_action&) = delete;
-        ~menu_action();
-        kind m_kind;
-        subkind m_subkind;
-        int m_data0;
-        int m_data1;
-
-    };
-
     class menu_state;
 
     class menu_view {
     public:
-        explicit menu_view(DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
+        explicit menu_view(DisplaySSD1306_128x64_I2C &d,
+                           std::shared_ptr<menu_state> menu_state,
+                           std::shared_ptr<inventory> invent);
         menu_view() = delete;
         menu_view(const menu_view&) = delete;
         virtual ~menu_view();
@@ -53,11 +29,15 @@ namespace midimagic {
     protected:
         DisplaySSD1306_128x64_I2C &m_display;
         std::shared_ptr<menu_state> m_menu_state;
+        std::shared_ptr<inventory> m_inventory;
     };
 
     class pin_view : public menu_view {
     public:
-        explicit pin_view(u8 pin, DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
+        explicit pin_view(u8 pin,
+                          DisplaySSD1306_128x64_I2C &d,
+                          std::shared_ptr<menu_state> menu_state,
+                          std::shared_ptr<inventory> invent);
         pin_view() = delete;
         pin_view(const pin_view&) = delete;
         virtual ~pin_view();
@@ -68,12 +48,14 @@ namespace midimagic {
         u8 m_pin;
         const char *m_menu_items[6];
         const NanoRect m_pin_menu_dimensions;
-        std::shared_ptr<LcdGfxMenu> pin_menu;
+        std::unique_ptr<LcdGfxMenu> pin_menu;
     };
 
     class over_view : public menu_view {
     public:
-        over_view(DisplaySSD1306_128x64_I2C &d, std::shared_ptr<menu_state> menu_state);
+        over_view(DisplaySSD1306_128x64_I2C &d,
+                  std::shared_ptr<menu_state> menu_state,
+                  std::shared_ptr<inventory> invent);
         over_view(const over_view&) = delete;
         virtual ~over_view();
 
@@ -97,7 +79,190 @@ namespace midimagic {
         void draw_inactivity(const int port_number) const;
     };
 
-    class menu_state {
+    class setup_view : public menu_view {
+    public:
+        setup_view(DisplaySSD1306_128x64_I2C &d,
+                   std::shared_ptr<menu_state> menu_state,
+                   std::shared_ptr<inventory> invent);
+        setup_view(const setup_view&) = delete;
+        virtual ~setup_view();
+
+        virtual void notify(const menu_action &a) override;
+
+    private:
+        const char *m_menu_items[2];
+        const NanoRect m_setup_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> setup_menu;
+    };
+
+    class portgroup_view : public menu_view {
+    public:
+        enum menu_layer {
+            TOP = 0,
+            INOUT_SELECT,
+            INOUT_CONFIG
+        };
+        enum menu_pane {
+            TITLE = 0,
+            INS_PANE,
+            OUTS_PANE
+        };
+
+        portgroup_view(DisplaySSD1306_128x64_I2C &d,
+                       std::shared_ptr<menu_state> menu_state,
+                       std::shared_ptr<inventory> invent,
+                       const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        portgroup_view(const portgroup_view&) = delete;
+        virtual ~portgroup_view();
+
+        virtual void notify(const menu_action &a) override;
+
+    protected:
+        const group_dispatcher& m_group_dispatcher;
+        const std::vector<std::unique_ptr<port_group>>::const_iterator m_cur_group_it;
+        port_group& m_port_group;
+        menu_pane m_current_pane_selection;
+
+    private:
+        menu_layer m_current_menu_layer;
+        void notify_top(const menu_action &a);
+        void notify_select(const menu_action &a);
+
+        void draw_frame() const;
+        void draw_title() const;
+        void draw_inputs() const;
+        void draw_outputs() const;
+        void draw_selection() const;
+    };
+
+    class config_portgroup_view : public portgroup_view {
+    public:
+        config_portgroup_view(DisplaySSD1306_128x64_I2C &d,
+                              std::shared_ptr<menu_state> menu_state,
+                              std::shared_ptr<inventory> invent,
+                              const std::vector<std::unique_ptr<port_group>>::const_iterator group_it,
+                              const menu_pane io_switch);
+        config_portgroup_view(const config_portgroup_view&) = delete;
+        virtual ~config_portgroup_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        const menu_pane m_io_switch;
+        const char *m_ins_config_menu_items[4];
+        const char *m_outs_config_menu_items[4];
+        const NanoRect m_config_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> config_menu;
+    };
+
+    class config_portgroup_ch_view : public portgroup_view {
+    public:
+        config_portgroup_ch_view(DisplaySSD1306_128x64_I2C &d,
+                                 std::shared_ptr<menu_state> menu_state,
+                                 std::shared_ptr<inventory> invent,
+                                 const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_ch_view(const config_portgroup_ch_view&) = delete;
+        virtual ~config_portgroup_ch_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        u8 m_channel;
+    };
+
+    class config_portgroup_demux_view : public portgroup_view {
+    public:
+        config_portgroup_demux_view(DisplaySSD1306_128x64_I2C &d,
+                                 std::shared_ptr<menu_state> menu_state,
+                                 std::shared_ptr<inventory> invent,
+                                 const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_demux_view(const config_portgroup_demux_view&) = delete;
+        virtual ~config_portgroup_demux_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        demux_type m_demux;
+    };
+
+    class config_portgroup_add_msg_view : public portgroup_view {
+    public:
+        config_portgroup_add_msg_view(DisplaySSD1306_128x64_I2C &d,
+                                      std::shared_ptr<menu_state> menu_state,
+                                      std::shared_ptr<inventory> invent,
+                                      const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_add_msg_view(const config_portgroup_add_msg_view&) = delete;
+        virtual ~config_portgroup_add_msg_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        const char** m_msg_names;
+        const NanoRect k_message_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> m_message_menu;
+    };
+
+    class config_portgroup_rem_msg_view : public portgroup_view {
+    public:
+        config_portgroup_rem_msg_view(DisplaySSD1306_128x64_I2C &d,
+                                      std::shared_ptr<menu_state> menu_state,
+                                      std::shared_ptr<inventory> invent,
+                                      const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_rem_msg_view(const config_portgroup_rem_msg_view&) = delete;
+        virtual ~config_portgroup_rem_msg_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        const std::vector<midi_message::message_type>& m_msg_types;
+        char** m_msg_names;
+        const NanoRect k_message_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> m_message_menu;
+    };
+
+    class config_portgroup_add_port_view : public portgroup_view {
+    public:
+        config_portgroup_add_port_view(DisplaySSD1306_128x64_I2C &d,
+                                      std::shared_ptr<menu_state> menu_state,
+                                      std::shared_ptr<inventory> invent,
+                                      const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_add_port_view(const config_portgroup_add_port_view&) = delete;
+        virtual ~config_portgroup_add_port_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        u8 m_port_number;
+    };
+
+    class config_portgroup_rem_port_view : public portgroup_view {
+    public:
+        config_portgroup_rem_port_view(DisplaySSD1306_128x64_I2C &d,
+                                      std::shared_ptr<menu_state> menu_state,
+                                      std::shared_ptr<inventory> invent,
+                                      const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_rem_port_view(const config_portgroup_rem_port_view&) = delete;
+        virtual ~config_portgroup_rem_port_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        std::vector<u8> m_port_numbers;
+        u8 m_port_selection;
+    };
+
+    class add_portgroup_view : public menu_view {
+    public:
+        add_portgroup_view(DisplaySSD1306_128x64_I2C &d,
+                           std::shared_ptr<menu_state> menu_state,
+                           std::shared_ptr<inventory> invent);
+        add_portgroup_view(const add_portgroup_view&) = delete;
+        virtual ~add_portgroup_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        group_dispatcher& m_group_dispatcher;
+        demux_type m_demux;
+        u8 m_channel;
+        u8 m_control;
+
+        void draw_selection(u8 control);
+    };
+
+    class menu_state : public menu_interface {
     public:
         menu_state();
         menu_state(const menu_state&) = delete;

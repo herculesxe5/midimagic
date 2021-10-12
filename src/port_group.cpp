@@ -31,13 +31,17 @@ namespace midimagic {
     }
 
     void group_dispatcher::add_message(midi_message& m) {
+        // catch program change messages, as these are supposed to control the device
+        if (m.type == midi_message::message_type::PROGRAM_CHANGE) {
+            return;
+        }
         sieve(m);
     }
 
     void group_dispatcher::sieve(midi_message& m) {
         for (auto &port_group: m_port_groups) {
-            if (m.channel == port_group->get_midi_channel() &&
-                port_group->has_msg_type(m.type)) {
+            if (m.channel == port_group->get_midi_channel()
+                && port_group->has_msg_type(m.type)) {
                 port_group->send_input(m);
             }
         }
@@ -49,7 +53,9 @@ namespace midimagic {
 
     port_group::port_group(const u8 id, const demux_type dt, const u8 channel)
         : k_id(id)
-        , m_input_channel(channel) {
+        , m_input_channel(channel)
+        , m_cc_number(0)
+        , m_cc_MSB_value(0) {
         set_demux(dt);
     }
 
@@ -58,20 +64,27 @@ namespace midimagic {
     }
 
     void port_group::set_demux(const demux_type type) {
+        std::unique_ptr<output_demux> new_demux;
         switch (type) {
             case demux_type::FIFO:
-                m_demux = std::make_unique<fifo_output_demux>(type);
+                new_demux = std::make_unique<fifo_output_demux>(type);
                 break;
             case demux_type::IDENTIC:
-                m_demux = std::make_unique<identic_output_demux>(type);
+                new_demux = std::make_unique<identic_output_demux>(type);
                 break;
             case demux_type::RANDOM:
-                m_demux = std::make_unique<random_output_demux>(type);
+                new_demux = std::make_unique<random_output_demux>(type);
                 break;
             default:
                 __builtin_trap();
                 break;
         }
+        if (m_demux) {
+            for (auto& port: m_demux->get_output()) {
+                new_demux->add_output(std::move(*port));
+            }
+        }
+        m_demux = std::move(new_demux);
     }
 
     void port_group::set_midi_channel(const u8 ch) {
@@ -133,8 +146,25 @@ namespace midimagic {
     void port_group::send_input(midi_message& m) {
         if (m.type == midi_message::message_type::NOTE_OFF) {
             m_demux->remove_note(m);
+        } else if (m.type == midi_message::message_type::CONTROL_CHANGE) {
+            if (m_cc_number == m.data0 || m_cc_number == m.data0 - 32) {
+                m_demux->add_note(parse_cc(m));
+            }
         } else {
             m_demux->add_note(m);
         }
+    }
+
+    midi_message& port_group::parse_cc(midi_message& m) {
+        // parse controller value and return midi_message with format:
+        // type::CONTROL_CHANGE, channel, value MSB, value LSB
+        u8 cc_LSB_value = 0;
+        if (m_cc_number == m.data0) {
+            m_cc_MSB_value = m.data1;
+        } else if ((m_cc_number == m.data0 - 32) && (m.data0 < 64)) {
+            cc_LSB_value = m.data1;
+        }
+        midi_message out_msg(m.type, m.channel, m_cc_MSB_value, cc_LSB_value);
+        return out_msg;
     }
 } // namespace midimagic

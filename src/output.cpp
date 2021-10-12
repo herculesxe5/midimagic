@@ -43,13 +43,57 @@ namespace midimagic {
     }
 
     void output_port::set_note(midi_message &msg) {
-        m_current_note = msg.data0;
-        // assume c1 tuning
-        i8 delta = msg.data0 - 60;
-        // calculate dac level
-        i16 steps = delta * 136 << 2;
+        i8 delta = 0;
+        i16 steps = 0, PB_value, PB_offset;
+        u8 digital_pin_control = HIGH;
+        u16 cc_value;
+        switch (msg.type) {
+            case midi_message::message_type::NOTE_ON :
+                m_current_note = msg.data0;
+                // assume c1 tuning
+                delta = msg.data0 - 60;
+                // calculate dac level
+                steps = delta * 136 << 2;
+                break;
+            case midi_message::message_type::POLY_KEY_PRESSURE :
+                // output unipolar representation of the value
+                steps = msg.data1 << 2;
+                break;
+            case midi_message::message_type::CONTROL_CHANGE :
+                // reassemble 14 bit value
+                cc_value = (msg.data0 << 7) + msg.data1;
+                steps = cc_value << 2;
+                // model switch functionality as in MIDI spec
+                if (cc_value < 64) {
+                    digital_pin_control = LOW;
+                }
+                break;
+            case midi_message::message_type::CHANNEL_PRESSURE :
+                // output unipolar representation of the value
+                steps = msg.data0 << 2;
+                break;
+            case midi_message::message_type::PITCH_BEND :
+                //FIXME test this
+                // reassemble signed integer
+                PB_value = msg.data0 << 8;
+                PB_value = PB_value & msg.data1;
+                // calculate offset in halftone steps
+                PB_offset = (272 / 8192) * PB_value;
+                // add offset to the current note if not cleared
+                if (m_current_note != 255) {
+                    delta = m_current_note - 60;
+                    steps = (delta * 136 + PB_offset) << 2;
+                } else {
+                    // output raw value
+                    steps = PB_offset << 2;
+                }
+                break;
+            default :
+                // nothing to do
+                break;
+        }
         m_dac.set_level(steps, m_dac_channel);
-        digitalWrite(m_digital_pin, HIGH);
+        digitalWrite(m_digital_pin, digital_pin_control);
         // send port activity info to current view
         menu_action a(menu_action::kind::PORT_ACTIVITY, menu_action::subkind::PORT_ACTIVE, m_port_number, m_current_note);
         m_menu->add_menu_action(a);

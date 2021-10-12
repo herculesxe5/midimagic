@@ -73,6 +73,47 @@ void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
     port_master->add_message(msg);
 }
 
+void handleAfterTouchPoly(byte midi_channel, byte midi_note, byte pressure) {
+    using namespace midimagic;
+    midi_message msg(midi_message::POLY_KEY_PRESSURE, midi_channel, midi_note, pressure);
+    port_master->add_message(msg);
+}
+
+void handleControlChange(byte midi_channel, byte midi_control_number, byte value) {
+    using namespace midimagic;
+    midi_message msg(midi_message::CONTROL_CHANGE, midi_channel, midi_control_number, value);
+    port_master->add_message(msg);
+}
+
+void handleProgramChange(byte midi_channel, byte midi_program_number) {
+    using namespace midimagic;
+    midi_message msg(midi_message::PROGRAM_CHANGE, midi_channel, midi_program_number, 0);
+    port_master->add_message(msg);
+}
+
+void handleAfterTouchChannel(byte midi_channel, byte pressure) {
+    using namespace midimagic;
+    midi_message msg(midi_message::CHANNEL_PRESSURE, midi_channel, pressure, 0);
+    port_master->add_message(msg);
+}
+
+void handlePitchBend(byte midi_channel, int pitch_offset) {
+    using namespace midimagic;
+    // Handle possible negative pitch offset
+    // Library expects 16-bit ints, but stm32 uses 32-bit width,
+    // so ignoring half of the bits should be ok
+    u16 mangled_offset = (u16) pitch_offset & 0xffff;
+    if (pitch_offset < 0) {
+        // add leading 1 if negative
+        mangled_offset = mangled_offset | 0x8000;
+    }
+    //FIXME test this
+    // need to transport 16 bit integer
+    // midi_message.data0 holds MSB, data1 holds LSB
+    midi_message msg(midi_message::PITCH_BEND, midi_channel, (u8) mangled_offset >> 8, (u8) mangled_offset & 0xff);
+    port_master->add_message(msg);
+}
+
 void rot_clk_isr() {
     using namespace midimagic;
     rot.signal_clk();

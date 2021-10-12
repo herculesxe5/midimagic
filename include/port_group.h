@@ -51,9 +51,13 @@ namespace midimagic {
 
         void send_input(midi_message& m);
     private:
+        midi_message parse_cc(midi_message& m);
+
         std::unique_ptr<output_demux> m_demux;
         std::vector<midi_message::message_type> m_input_types;
         u8 m_input_channel;
+        u8 m_cc_number;
+        u8 m_cc_MSB_value;
         const u8 k_id;
     };
 } // namespace midimagic

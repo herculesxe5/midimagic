@@ -148,14 +148,15 @@ namespace midimagic {
             m_demux->remove_note(m);
         } else if (m.type == midi_message::message_type::CONTROL_CHANGE) {
             if (m_cc_number == m.data0 || m_cc_number == m.data0 - 32) {
-                m_demux->add_note(parse_cc(m));
+                auto new_msg = parse_cc(m);
+                m_demux->add_note(new_msg);
             }
         } else {
             m_demux->add_note(m);
         }
     }
 
-    midi_message& port_group::parse_cc(midi_message& m) {
+    midi_message port_group::parse_cc(midi_message& m) {
         // parse controller value and return midi_message with format:
         // type::CONTROL_CHANGE, channel, value MSB, value LSB
         u8 cc_LSB_value = 0;

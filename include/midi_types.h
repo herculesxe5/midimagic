@@ -13,7 +13,11 @@ struct midi_message {
         CONTROL_CHANGE,
         PROGRAM_CHANGE,
         CHANNEL_PRESSURE,
-        PITCH_BEND
+        PITCH_BEND,
+        CLOCK = 0xf8,
+        START = 0xfa,
+        CONTINUE,
+        STOP
     };
 
     message_type type;
@@ -43,7 +47,8 @@ static const char *midi_message_type_names[] = {
     "Contr Chg",
     "Progr Chg",
     "Chan Press",
-    "Pitch Bend"
+    "Pitch Bend",
+    "Clock"
 };
 
 static const char *midi_message_type_long_names[] = {
@@ -53,11 +58,18 @@ static const char *midi_message_type_long_names[] = {
     "Control Change",
     "Program Change",
     "Channel Pressure",
-    "Pitch Bend"
+    "Pitch Bend",
+    "Timing Clock"
 };
 
 static const char* midi_msgtype2name(const midi_message::message_type type) {
-    return midi_message_type_names[type-0x8];
+    if (type < 0xf) {
+        return midi_message_type_names[type - 0x8];
+    } else if (type == midi_message::message_type::CLOCK) {
+        return midi_message_type_names[7];
+    } else {
+        return "unknown type";
+    }
 };
 
 } // namespace midimagic

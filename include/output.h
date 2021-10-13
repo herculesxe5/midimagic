@@ -30,7 +30,7 @@ namespace midimagic {
         bool is_active();
         bool is_note(midi_message &msg);
         void set_note(midi_message &note_on_msg);
-        u8   get_note();
+        const u8 get_note() const;
         void end_note();
         const u8 get_digital_pin() const;
         const u8 get_port_number() const;
@@ -40,6 +40,9 @@ namespace midimagic {
         u8 m_dac_channel;
         ad57x4 &m_dac;
         u8 m_current_note;
+        u8 m_clock_count;
+        u8 m_clock_rate; // number of clock messages at which counter gets reset, 24 per quarter note
+        bool m_output_velocity;
         std::shared_ptr<menu_action_queue> m_menu;
         u8 m_port_number;
     };

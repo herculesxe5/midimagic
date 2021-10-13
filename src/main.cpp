@@ -114,6 +114,30 @@ void handlePitchBend(byte midi_channel, int pitch_offset) {
     port_master->add_message(msg);
 }
 
+void handleClock() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::CLOCK, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleStart() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::START, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleContinue() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::CONTINUE, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleStop() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::STOP, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
 void rot_clk_isr() {
     using namespace midimagic;
     rot.signal_clk();

@@ -723,7 +723,8 @@ namespace midimagic {
         , m_msg_names(midi_message_type_long_names)
         {
         m_message_menu = std::make_unique<LcdGfxMenu>(m_msg_names,
-            midi_message::message_type::PITCH_BEND - midi_message::message_type::NOTE_OFF +1,
+            //FIXME adjust size if midi_message_type_long_names is changed
+            8,
             k_message_menu_dimensions);
     }
 
@@ -748,7 +749,11 @@ namespace midimagic {
                     m_message_menu->show(m_display);
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     u8 sel_msg_code = m_message_menu->selection() + midi_message::message_type::NOTE_OFF;
-                    m_port_group.add_midi_input(static_cast<midi_message::message_type>(sel_msg_code));
+                    if (sel_msg_code < 0xf) {
+                        m_port_group.add_midi_input(static_cast<midi_message::message_type>(sel_msg_code));
+                    } else if (m_message_menu->selection() == 7) {
+                        m_port_group.add_midi_input(midi_message::message_type::CLOCK);
+                    }
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,

@@ -39,10 +39,30 @@ namespace midimagic {
     }
 
     void group_dispatcher::sieve(midi_message& m) {
-        for (auto &port_group: m_port_groups) {
-            if (m.channel == port_group->get_midi_channel()
-                && port_group->has_msg_type(m.type)) {
-                port_group->send_input(m);
+        // system common and real time messages are channel independent and to be send to all receivers
+        if (m.type > 0xf0) {
+            for (auto &port_group: m_port_groups) {
+                switch (m.type) {
+                    case midi_message::message_type::START :
+                        // just slide through
+                    case midi_message::message_type::CONTINUE :
+                        // just slide through
+                    case midi_message::message_type::CLOCK :
+                        if (port_group->has_msg_type(midi_message::message_type::CLOCK)) {
+                            port_group->send_input(m);
+                        }
+                        break;
+                    default :
+                        // nothing to do
+                        break;
+                }
+            }
+        } else {
+            for (auto &port_group: m_port_groups) {
+                if (m.channel == port_group->get_midi_channel()
+                    && port_group->has_msg_type(m.type)) {
+                    port_group->send_input(m);
+                }
             }
         }
     }
@@ -148,8 +168,8 @@ namespace midimagic {
             m_demux->remove_note(m);
         } else if (m.type == midi_message::message_type::CONTROL_CHANGE) {
             if (m_cc_number == m.data0 || m_cc_number == m.data0 - 32) {
-                auto new_msg = parse_cc(m);
-                m_demux->add_note(new_msg);
+                auto cc_msg = parse_cc(m);
+                m_demux->add_note(cc_msg);
             }
         } else {
             m_demux->add_note(m);

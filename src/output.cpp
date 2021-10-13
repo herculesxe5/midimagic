@@ -29,6 +29,9 @@ namespace midimagic {
         , m_dac_channel(dac_channel)
         , m_dac(dac)
         , m_current_note(255)
+        , m_clock_count(0)
+        , m_clock_rate(24)
+        , m_output_velocity(false)
         , m_menu(menu)
         , m_port_number(port_number) {
         pinMode(m_digital_pin, OUTPUT);
@@ -47,17 +50,24 @@ namespace midimagic {
         i16 steps = 0, PB_value, PB_offset;
         u8 digital_pin_control = HIGH;
         u16 cc_value;
+        bool inhibit_dac_update = false, inhibit_digital_pin = false, inhibit_menu_action = false;
+        menu_action::subkind port_status = menu_action::subkind::PORT_ACTIVE;
         switch (msg.type) {
             case midi_message::message_type::NOTE_ON :
                 m_current_note = msg.data0;
-                // assume c1 tuning
-                delta = msg.data0 - 60;
-                // calculate dac level
-                steps = delta * 136 << 2;
+                if (!m_output_velocity) {
+                    // assume c1 tuning
+                    delta = msg.data0 - 60;
+                    // calculate dac level
+                    steps = delta * 136 << 2;
+                } else {
+                    steps = msg.data1 << 2;
+                }
                 break;
             case midi_message::message_type::POLY_KEY_PRESSURE :
                 // output unipolar representation of the value
                 steps = msg.data1 << 2;
+                inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::CONTROL_CHANGE :
                 // reassemble 14 bit value
@@ -71,12 +81,14 @@ namespace midimagic {
             case midi_message::message_type::CHANNEL_PRESSURE :
                 // output unipolar representation of the value
                 steps = msg.data0 << 2;
+                inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::PITCH_BEND :
+                inhibit_digital_pin = true;
                 //FIXME test this
                 // reassemble signed integer
                 PB_value = msg.data0 << 8;
-                PB_value = PB_value & msg.data1;
+                PB_value = PB_value + msg.data1;
                 // calculate offset in halftone steps
                 PB_offset = (272 / 8192) * PB_value;
                 // add offset to the current note if not cleared
@@ -88,25 +100,58 @@ namespace midimagic {
                     steps = PB_offset << 2;
                 }
                 break;
+            case midi_message::message_type::START :
+                // just slide through
+            case midi_message::message_type::CONTINUE :
+                // reset clock_count on receipt of START or CONTINUE to resync on the next clock
+                m_clock_count = 0;
+                inhibit_dac_update = true;
+                digital_pin_control = LOW;
+                port_status = menu_action::subkind::PORT_NACTIVE;
+                break;
+            case midi_message::message_type::CLOCK :
+                // raise digital pin on clock_count 1,
+                // lower pin after duty cycle of 5 clocks,
+                // reset clock_count when at value of clock_rate
+                inhibit_dac_update = true;
+                m_clock_count++;
+                if (m_clock_count >= m_clock_rate) {
+                    m_clock_count = 0;
+                } else if (m_clock_count == 6) {
+                    digital_pin_control = LOW;
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                } else if (m_clock_count == 1) {
+                    // nothing to do, use default signaling
+                } else {
+                    inhibit_digital_pin = true;
+                    inhibit_menu_action = true;
+                }
+                break;
             default :
                 // nothing to do
                 break;
         }
-        m_dac.set_level(steps, m_dac_channel);
+        if (!inhibit_dac_update) {
+            m_dac.set_level(steps, m_dac_channel);
+        }
+        if (!inhibit_digital_pin) {
         digitalWrite(m_digital_pin, digital_pin_control);
-        // send port activity info to current view
-        menu_action a(menu_action::kind::PORT_ACTIVITY, menu_action::subkind::PORT_ACTIVE, m_port_number, m_current_note);
-        m_menu->add_menu_action(a);
+        }
+        if (!inhibit_menu_action) {
+            // send port activity info to current view
+            menu_action a(menu_action::kind::PORT_ACTIVITY, port_status, m_port_number, m_current_note);
+            m_menu->add_menu_action(a);
+        }
     }
 
-    u8 output_port::get_note() {
+    const u8 output_port::get_note() const {
         return m_current_note;
     }
 
     void output_port::end_note() {
         m_current_note = 255;
         digitalWrite(m_digital_pin, LOW);
-        //send port activity info to current view
+        // send port activity info to current view
         menu_action a(menu_action::kind::PORT_ACTIVITY, menu_action::subkind::PORT_NACTIVE, m_port_number);
         m_menu->add_menu_action(a);
     }

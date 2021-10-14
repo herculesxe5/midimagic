@@ -32,23 +32,42 @@ namespace midimagic {
         std::shared_ptr<inventory> m_inventory;
     };
 
-    class pin_view : public menu_view {
+    class port_view : public menu_view {
     public:
-        explicit pin_view(u8 pin,
+        explicit port_view(u8 port_number,
                           DisplaySSD1306_128x64_I2C &d,
                           std::shared_ptr<menu_state> menu_state,
                           std::shared_ptr<inventory> invent);
-        pin_view() = delete;
-        pin_view(const pin_view&) = delete;
-        virtual ~pin_view();
+        port_view() = delete;
+        port_view(const port_view&) = delete;
+        virtual ~port_view();
+
+        virtual void notify(const menu_action &a) override;
+
+    protected:
+        const u8 m_port_number;
+        output_port& m_port;
+
+    private:
+        const char *m_menu_items[6];
+        const NanoRect m_port_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> m_port_menu;
+    };
+
+    class config_port_clock_view : public port_view {
+    public:
+        explicit config_port_clock_view(u8 port_number,
+                                        DisplaySSD1306_128x64_I2C &d,
+                                        std::shared_ptr<menu_state> menu_state,
+                                        std::shared_ptr<inventory> invent);
+        config_port_clock_view() = delete;
+        config_port_clock_view(const config_port_clock_view&) = delete;
+        virtual ~config_port_clock_view();
 
         virtual void notify(const menu_action &a) override;
 
     private:
-        u8 m_pin;
-        const char *m_menu_items[6];
-        const NanoRect m_pin_menu_dimensions;
-        std::unique_ptr<LcdGfxMenu> pin_menu;
+        u8 m_clock_rate;
     };
 
     class over_view : public menu_view {

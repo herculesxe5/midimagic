@@ -40,7 +40,7 @@ namespace midimagic {
         add_port_group(system_pg_it_by_id(system_pg_id));
     }
 
-    const output_port& inventory::get_output_port(const u8 port_number) {
+    output_port& inventory::get_output_port(const u8 port_number) {
         for (auto &port: m_system_ports) {
             if (port.get_port_number() == port_number) {
                 return port;

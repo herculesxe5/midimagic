@@ -164,6 +164,31 @@ namespace midimagic {
         return m_port_number;
     }
 
+    void output_port::set_clock_rate(const u8 clr) {
+        m_clock_rate = clr;
+    }
+
+    const u8 output_port::get_clock_rate() const {
+        return m_clock_rate;
+    }
+
+    void output_port::reset_clock() {
+        midi_message msg(midi_message::message_type::START, 0, 0, 0);
+        set_note(msg);
+    }
+
+    void output_port::set_velocity_switch() {
+        if (m_output_velocity) {
+            m_output_velocity = false;
+        } else {
+            m_output_velocity = true;
+        }
+    }
+
+    const bool output_port::get_velocity_switch() const {
+        return m_output_velocity;
+    }
+
     output_demux::output_demux(const demux_type type)
         : m_type(type) {
         // nothing to do

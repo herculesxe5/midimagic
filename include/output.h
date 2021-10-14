@@ -34,6 +34,11 @@ namespace midimagic {
         void end_note();
         const u8 get_digital_pin() const;
         const u8 get_port_number() const;
+        void set_clock_rate(const u8 clr);
+        const u8 get_clock_rate() const;
+        void reset_clock();
+        void set_velocity_switch();
+        const bool get_velocity_switch() const;
 
     private:
         u8 m_digital_pin;

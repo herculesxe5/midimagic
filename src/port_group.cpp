@@ -163,6 +163,14 @@ namespace midimagic {
         return k_id;
     }
 
+    void port_group::set_cc(const u8 cc_number) {
+        m_cc_number = cc_number;
+    }
+
+    const u8 port_group::get_cc() const {
+        return m_cc_number;
+    }
+
     void port_group::send_input(midi_message& m) {
         if (m.type == midi_message::message_type::NOTE_OFF) {
             m_demux->remove_note(m);

@@ -48,6 +48,8 @@ namespace midimagic {
         void add_port(std::shared_ptr<output_port> port);
         void remove_port(u8 port_number);
         const u8 get_id() const;
+        void set_cc(const u8 cc_number);
+        const u8 get_cc() const;
 
         void send_input(midi_message& m);
     private:

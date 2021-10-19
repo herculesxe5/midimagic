@@ -39,7 +39,7 @@ namespace midimagic {
 
     struct inventory::port_group_config default_polyphonic_pg = {
         .id = 0,
-        .demux = demux_type::FIFO,
+        .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .input_types = {midi_message::message_type::NOTE_ON, midi_message::message_type::NOTE_OFF},
         .output_port_numbers = {0, 1, 2}
@@ -47,9 +47,9 @@ namespace midimagic {
 
     struct inventory::port_group_config test_pg1 = {
         .id = 1,
-        .demux = demux_type::RANDOM,
-        .midi_channel = 11,
-        .input_types = {midi_message::message_type::POLY_KEY_PRESSURE},
+        .demux = demux_type::IDENTIC,
+        .midi_channel = 1,
+        .input_types = {midi_message::message_type::CLOCK},
         .output_port_numbers = {7}
     };
 
@@ -58,12 +58,20 @@ namespace midimagic {
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .input_types = {midi_message::message_type::PITCH_BEND},
-        .output_port_numbers = {3, 4}
+        .output_port_numbers = {3}
+    };
+
+    struct inventory::port_group_config test_cc = {
+        .id = 3,
+        .demux = demux_type::IDENTIC,
+        .midi_channel = 1,
+        .input_types = {midi_message::message_type::CONTROL_CHANGE},
+        .output_port_numbers = {4}
     };
 
     const struct inventory::system_config default_config = (inventory::system_config) {
         .system_ports = {port0_conf, port1_conf, port2_conf, port3_conf, port4_conf, port7_conf},
-        .system_port_groups = {default_polyphonic_pg, test_pg1, test_pg2}
+        .system_port_groups = {default_polyphonic_pg, test_pg1, test_pg2, test_cc}
     };
 
 

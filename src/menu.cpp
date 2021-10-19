@@ -34,7 +34,7 @@ namespace midimagic {
         : menu_view(d, menu_state, invent)
         , m_port_number(port_number)
         , m_port(m_inventory->get_output_port(m_port_number))
-        , m_menu_items{"Switch Note/Velocity",
+        , m_menu_items{"Switch Note/Velocit",
                        "Change Clock Rate",
                        "Resync Clock"}
         , m_port_menu_dimensions{NanoPoint{0, 24}, NanoPoint{127, 63}}
@@ -53,9 +53,9 @@ namespace midimagic {
                 // show pin submenu
                 m_display.clear();
                 m_display.setFixedFont(ssd1306xled_font6x8);
-                m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
+                m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
-                m_display.print(m_port_number);
+                m_display.print(m_port_number + 1);
                 if (m_port.get_velocity_switch()) {
                     m_display.printFixed(0, 8, "Output: Velocity", STYLE_NORMAL);
                 } else {
@@ -73,9 +73,10 @@ namespace midimagic {
                         break;
                     case 96 :
                         m_display.printFixed(0, 16, "Clock Rate: 1");
+                        break;
                     default :
                         m_display.printFixed(0, 16, "Clock Rate:");
-                        m_display.setTextCursor(78, 16);
+                        m_display.setTextCursor(72, 16);
                         m_display.print(m_port.get_clock_rate());
                         break;
                 }
@@ -111,12 +112,13 @@ namespace midimagic {
                 if (a.m_data0 == m_port_number) {
                     if        (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
                         m_display.printFixed(100, 0, "*", STYLE_NORMAL);
-                        m_display.setTextCursor(112, 0);
+                        m_display.setTextCursor(108, 0);
                         m_display.print(a.m_data1);
                     } else if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
                         m_display.printFixed(100, 0, " ", STYLE_NORMAL);
                     }
                 }
+                break;
             default :
                 // nothing to do
                 break;
@@ -143,7 +145,7 @@ namespace midimagic {
                 m_display.setFixedFont(ssd1306xled_font6x8);
                 m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
-                m_display.print(m_port_number);
+                m_display.print(m_port_number + 1);
                 m_display.printFixed(0, 8, "Set Port Clock Rate:", STYLE_NORMAL);
                 switch (m_clock_rate) {
                     case 12 :
@@ -157,6 +159,7 @@ namespace midimagic {
                         break;
                     case 96 :
                         m_display.printFixed(0, 16, "1 Note");
+                        break;
                     default :
                         m_display.setTextCursor(0, 16);
                         m_display.print(m_clock_rate);
@@ -206,7 +209,7 @@ namespace midimagic {
                          std::shared_ptr<menu_state> menu_state,
                          std::shared_ptr<inventory> invent)
         : menu_view(d, menu_state, invent)
-        , m_pin_select(1)
+        , m_pin_select(0)
         , m_rowoffset(32)
         , m_activitydot_xoffset(4)
         , m_port_value_xoffset(12)
@@ -251,17 +254,18 @@ namespace midimagic {
                     draw_pin_deselect();
                     // Select next pin
                     m_pin_select++;
-                    if (m_pin_select > 8) {
-                        m_pin_select = 1;
+                    if (m_pin_select > 7) {
+                        m_pin_select = 0;
                     }
                     draw_pin_select();
 
                 } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
                     draw_pin_deselect();
                     // Select previous pin
-                    m_pin_select--;
-                    if (m_pin_select < 1) {
-                        m_pin_select = 8;
+                    if (m_pin_select == 0) {
+                        m_pin_select = 7;
+                    } else {
+                        m_pin_select--;
                     }
                     draw_pin_select();
                 }
@@ -278,22 +282,22 @@ namespace midimagic {
 
     void over_view::draw_pin_select() const {
         // draw selection marker bitmap
-        if (m_pin_select < 5) {
-            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset,
+        if (m_pin_select < 4) {
+            m_display.drawBitmap1((m_pin_select)*32+m_selection_xcelloffset,
                                 m_selection_yoffset, sizeof(arrow_down), 8, arrow_down);
         } else {
-            m_display.drawBitmap1((m_pin_select-1-4)*32+m_selection_xcelloffset,
+            m_display.drawBitmap1((m_pin_select-4)*32+m_selection_xcelloffset,
                                 m_selection_yoffset+m_rowoffset, sizeof(arrow_down), 8, arrow_down);
         }
     }
 
     void over_view::draw_pin_deselect() const {
         // overwrite selection marker with black bitmap
-        if (m_pin_select < 5) {
-            m_display.drawBitmap1((m_pin_select-1)*32+m_selection_xcelloffset,
+        if (m_pin_select < 4) {
+            m_display.drawBitmap1((m_pin_select)*32+m_selection_xcelloffset,
                                 m_selection_yoffset, sizeof(black_rect_5x8), 8, black_rect_5x8);
         } else {
-            m_display.drawBitmap1((m_pin_select-1-4)*32+m_selection_xcelloffset,
+            m_display.drawBitmap1((m_pin_select-4)*32+m_selection_xcelloffset,
                                 m_selection_yoffset+m_rowoffset, sizeof(black_rect_5x8), 8, black_rect_5x8);
         }
     }
@@ -594,7 +598,7 @@ namespace midimagic {
         const menu_pane io_switch)
         : portgroup_view(d, menu_state, invent, group_it)
         , m_io_switch(io_switch)
-        , m_ins_config_menu_items{"Set input channel",
+        , m_ins_config_menu_items{"Set MIDI channel",
                                   "Add MIDI input",
                                   "Remove MIDI input",
                                   "Delete this portgroup"}
@@ -692,11 +696,19 @@ namespace midimagic {
                         auto gd = m_inventory->get_group_dispatcher();
                         gd->remove_port_group(m_port_group.get_id());
                         // Switch to portgroup_view
-                        auto v = std::make_shared<portgroup_view>(m_display,
-                                                                  m_menu_state,
-                                                                  m_inventory,
-                                                                  (gd->get_port_groups()).begin());
-                        m_menu_state->register_view(v);
+                        // check if there is at least 1 port group left
+                        if (!gd->get_port_groups().empty()) {
+                            auto v = std::make_shared<portgroup_view>(m_display,
+                                                                      m_menu_state,
+                                                                      m_inventory,
+                                                                      (gd->get_port_groups()).begin());
+                            m_menu_state->register_view(v);
+                        } else {
+                            auto v = std::make_shared<add_portgroup_view>(m_display,
+                                                                          m_menu_state,
+                                                                          m_inventory);
+                            m_menu_state->register_view(v);
+                        }
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
                     // Switch back to portgroup_view

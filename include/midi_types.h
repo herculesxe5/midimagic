@@ -54,7 +54,7 @@ static const char *midi_message_type_names[] = {
 static const char *midi_message_type_long_names[] = {
     "Note Off",
     "Note On",
-    "Polyphonic Key Press",
+    "Polyphonic Key Pres",
     "Control Change",
     "Program Change",
     "Channel Pressure",

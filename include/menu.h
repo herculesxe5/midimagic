@@ -49,7 +49,7 @@ namespace midimagic {
         output_port& m_port;
 
     private:
-        const char *m_menu_items[6];
+        const char *m_menu_items[3];
         const NanoRect m_port_menu_dimensions;
         std::unique_ptr<LcdGfxMenu> m_port_menu;
     };

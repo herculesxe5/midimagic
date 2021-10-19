@@ -72,7 +72,7 @@ namespace midimagic {
             case midi_message::message_type::CONTROL_CHANGE :
                 // reassemble 14 bit value
                 cc_value = (msg.data0 << 7) + msg.data1;
-                steps = cc_value << 2;
+                steps = cc_value << 1;
                 // model switch functionality as in MIDI spec
                 if (cc_value < 64) {
                     digital_pin_control = LOW;

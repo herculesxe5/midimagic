@@ -102,15 +102,14 @@ void handlePitchBend(byte midi_channel, int pitch_offset) {
     // Handle possible negative pitch offset
     // Library expects 16-bit ints, but stm32 uses 32-bit width,
     // so ignoring half of the bits should be ok
-    u16 mangled_offset = (u16) pitch_offset & 0xffff;
+    u16 mangled_offset = (u16) (pitch_offset & 0xffff);
     if (pitch_offset < 0) {
         // add leading 1 if negative
         mangled_offset = mangled_offset | 0x8000;
     }
-    //FIXME test this
     // need to transport 16 bit integer
     // midi_message.data0 holds MSB, data1 holds LSB
-    midi_message msg(midi_message::PITCH_BEND, midi_channel, (u8) mangled_offset >> 8, (u8) mangled_offset & 0xff);
+    midi_message msg(midi_message::PITCH_BEND, midi_channel, (u8) (mangled_offset >> 8), (u8) (mangled_offset & 0xff));
     port_master->add_message(msg);
 }
 
@@ -153,11 +152,22 @@ void setup() {
     // Power up dacs
     pinMode(power_dacs, OUTPUT);
     digitalWrite(power_dacs, HIGH);
-    MIDI.setHandleNoteOn(handleNoteOn);
-    MIDI.setHandleNoteOff(handleNoteOff);
-    MIDI.begin(MIDI_CHANNEL_OMNI);
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
+    // Set up MIDI
+    MIDI.setHandleNoteOn(handleNoteOn);
+    MIDI.setHandleNoteOff(handleNoteOff);
+    MIDI.setHandleAfterTouchPoly(handleAfterTouchPoly);
+    MIDI.setHandleControlChange(handleControlChange);
+    MIDI.setHandleProgramChange(handleProgramChange);
+    MIDI.setHandleAfterTouchChannel(handleAfterTouchChannel);
+    MIDI.setHandlePitchBend(handlePitchBend);
+    MIDI.setHandleClock(handleClock);
+    MIDI.setHandleStart(handleStart);
+    MIDI.setHandleContinue(handleContinue);
+    MIDI.setHandleStop(handleStop);
+    MIDI.begin(MIDI_CHANNEL_OMNI);
+
     // Set up interrupts
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);

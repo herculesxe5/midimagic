@@ -87,10 +87,10 @@ namespace midimagic {
                 inhibit_digital_pin = true;
                 //FIXME test this
                 // reassemble signed integer
-                PB_value = msg.data0 << 8;
-                PB_value = PB_value + msg.data1;
+                PB_value = (i16) (msg.data0 << 8);
+                PB_value = PB_value | msg.data1;
                 // calculate offset in halftone steps
-                PB_offset = (272 / 8192) * PB_value;
+                PB_offset = (static_cast<float>(272) / 8192) * PB_value;
                 // add offset to the current note if not cleared
                 if (m_current_note != 255) {
                     delta = m_current_note - 60;
@@ -135,7 +135,7 @@ namespace midimagic {
             m_dac.set_level(steps, m_dac_channel);
         }
         if (!inhibit_digital_pin) {
-        digitalWrite(m_digital_pin, digital_pin_control);
+            digitalWrite(m_digital_pin, digital_pin_control);
         }
         if (!inhibit_menu_action) {
             // send port activity info to current view

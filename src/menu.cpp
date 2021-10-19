@@ -601,7 +601,8 @@ namespace midimagic {
         , m_ins_config_menu_items{"Set MIDI channel",
                                   "Add MIDI input",
                                   "Remove MIDI input",
-                                  "Delete this portgroup"}
+                                  "Delete this portgroup",
+                                  "Set Controller"}
         , m_outs_config_menu_items{"Set demuxer",
                                    "Add port",
                                    "Remove port",
@@ -709,6 +710,13 @@ namespace midimagic {
                                                                           m_inventory);
                             m_menu_state->register_view(v);
                         }
+                    } else if ((config_menu->selection() == 4) && (m_io_switch == menu_pane::INS_PANE)) {
+                        // Switch to config_portgroup_cc_msg_view
+                        auto v = std::make_shared<config_portgroup_cc_msg_view>(m_display,
+                                                                                m_menu_state,
+                                                                                m_inventory,
+                                                                                m_cur_group_it);
+                        m_menu_state->register_view(v);
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
                     // Switch back to portgroup_view
@@ -883,6 +891,15 @@ namespace midimagic {
                     u8 sel_msg_code = m_message_menu->selection() + midi_message::message_type::NOTE_OFF;
                     if (sel_msg_code < 0xf) {
                         m_port_group.add_midi_input(static_cast<midi_message::message_type>(sel_msg_code));
+                        if (static_cast<midi_message::message_type>(sel_msg_code) == midi_message::message_type::CONTROL_CHANGE) {
+                            // Switch to config_portgroup_cc_msg_view
+                            auto v = std::make_shared<config_portgroup_cc_msg_view>(m_display,
+                                                                                    m_menu_state,
+                                                                                    m_inventory,
+                                                                                    m_cur_group_it);
+                            m_menu_state->register_view(v);
+                            return;
+                        }
                     } else if (m_message_menu->selection() == 7) {
                         m_port_group.add_midi_input(midi_message::message_type::CLOCK);
                     }
@@ -899,6 +916,74 @@ namespace midimagic {
                                                                      m_inventory,
                                                                      m_cur_group_it,
                                                                      menu_pane::INS_PANE);
+                    m_menu_state->register_view(v);
+                }
+                break;
+            default :
+                // nothing to do
+                break;
+        }
+    }
+
+    config_portgroup_cc_msg_view::config_portgroup_cc_msg_view(
+        DisplaySSD1306_128x64_I2C &d,
+        std::shared_ptr<menu_state> menu_state,
+        std::shared_ptr<inventory> invent,
+        const std::vector<std::unique_ptr<port_group>>::const_iterator group_it)
+        : portgroup_view(d, menu_state, invent, group_it)
+        , m_cc_number(m_port_group.get_cc()) {
+        // nothing to do
+    }
+
+    config_portgroup_cc_msg_view::~config_portgroup_cc_msg_view() {
+        // nothing to do
+    }
+
+    void config_portgroup_cc_msg_view::notify(const menu_action &a) {
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.clear();
+                m_display.setFixedFont(ssd1306xled_font6x8);
+                m_display.printFixed(4, 0, "Select a controller:", STYLE_NORMAL);
+                m_display.setTextCursor(4, 20);
+                m_display.print(m_cc_number);
+                break;
+            case menu_action::kind::ROT_ACTIVITY :
+                if        (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
+                    m_cc_number++;
+                    if (m_cc_number > 127) {
+                        m_cc_number = 0;
+                    } else if (m_cc_number == 32) {
+                        m_cc_number = 64;
+                    }
+                    // Trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+                } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
+                    if (m_cc_number == 64) {
+                        m_cc_number = 31;
+                    } else if (m_cc_number > 0) {
+                        m_cc_number--;
+                    } else if (m_cc_number == 0) {
+                        m_cc_number = 127;
+                    }
+                    // Trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    m_port_group.set_cc(m_cc_number);
+                    // Switch to portgroup_view
+                    auto v = std::make_shared<portgroup_view>(m_display,
+                                                              m_menu_state,
+                                                              m_inventory,
+                                                              m_cur_group_it);
+                    m_menu_state->register_view(v);
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    // Switch to portgroup_view
+                    auto v = std::make_shared<portgroup_view>(m_display,
+                                                              m_menu_state,
+                                                              m_inventory,
+                                                              m_cur_group_it);
                     m_menu_state->register_view(v);
                 }
                 break;

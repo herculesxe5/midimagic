@@ -46,7 +46,7 @@ namespace midimagic {
 
     protected:
         const u8 m_port_number;
-        output_port& m_port;
+        std::shared_ptr<output_port> m_port;
 
     private:
         const char *m_menu_items[3];

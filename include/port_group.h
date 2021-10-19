@@ -45,7 +45,7 @@ namespace midimagic {
         const std::vector<midi_message::message_type>& get_msg_types() const;
         const bool has_msg_type(const midi_message::message_type msg_type) const;
 
-        void add_port(output_port port);
+        void add_port(std::shared_ptr<output_port> port);
         void remove_port(u8 port_number);
         const u8 get_id() const;
 

@@ -53,7 +53,7 @@ namespace midimagic {
         void submit_portgroup_change(const u8 system_pg_id); // inform inventory about port group config change, updates system_config
         void submit_portgroup_delete(const u8 system_pg_id); // inform inventory about deleted port group, updates system config
         void submit_portgroup_add(const u8 system_pg_id); // inform inventory about new port group, updates system config
-        output_port& get_output_port(const u8 port_number); // returns reference to output_port by port number, creates object if needed
+        std::shared_ptr<output_port> get_output_port(const u8 port_number); // returns pointer to output_port by port number, creates object if needed
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         void apply_config(const struct system_config& new_config); // setup system as in new_config
     private:
@@ -61,7 +61,7 @@ namespace midimagic {
         std::shared_ptr<menu_action_queue> m_menu_q;
         ad57x4 &m_dac0, &m_dac1;
         struct system_config m_system_config;
-        std::vector<output_port> m_system_ports;
+        std::vector<std::shared_ptr<output_port>> m_system_ports;
 
         void flush(); // destroys all port groups and deletes from system_config
 

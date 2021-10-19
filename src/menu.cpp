@@ -56,12 +56,12 @@ namespace midimagic {
                 m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
-                if (m_port.get_velocity_switch()) {
+                if (m_port->get_velocity_switch()) {
                     m_display.printFixed(0, 8, "Output: Velocity", STYLE_NORMAL);
                 } else {
                     m_display.printFixed(0, 8, "Output: Note", STYLE_NORMAL);
                 }
-                switch (m_port.get_clock_rate()) {
+                switch (m_port->get_clock_rate()) {
                     case 12 :
                         m_display.printFixed(0, 16, "Clock Rate: 1/8");
                         break;
@@ -77,7 +77,7 @@ namespace midimagic {
                     default :
                         m_display.printFixed(0, 16, "Clock Rate:");
                         m_display.setTextCursor(72, 16);
-                        m_display.print(m_port.get_clock_rate());
+                        m_display.print(m_port->get_clock_rate());
                         break;
                 }
                 m_port_menu->show(m_display);
@@ -85,7 +85,7 @@ namespace midimagic {
             case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     if (m_port_menu->selection() == 0) {
-                            m_port.set_velocity_switch();
+                            m_port->set_velocity_switch();
                             // trigger display update
                             menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
                             m_menu_state->notify(a);
@@ -94,7 +94,7 @@ namespace midimagic {
                             auto v = std::make_shared<config_port_clock_view>(m_port_number, m_display, m_menu_state, m_inventory);
                             m_menu_state->register_view(v);
                     } else if (m_port_menu->selection() == 2) {
-                            m_port.reset_clock();
+                            m_port->reset_clock();
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
                     // switch to over_view
@@ -130,7 +130,7 @@ namespace midimagic {
                                                    std::shared_ptr<menu_state> menu_state,
                                                    std::shared_ptr<inventory> invent)
         : port_view(port_number, d, menu_state, invent)
-        , m_clock_rate(m_port.get_clock_rate()) {
+        , m_clock_rate(m_port->get_clock_rate()) {
         // nothing to do
     }
 
@@ -189,7 +189,7 @@ namespace midimagic {
                     m_menu_state->notify(a);
 
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
-                    m_port.set_clock_rate(m_clock_rate);
+                    m_port->set_clock_rate(m_clock_rate);
                     // switch back to port_view
                     auto v = std::make_shared<port_view>(m_port_number, m_display, m_menu_state, m_inventory);
                     m_menu_state->register_view(v);
@@ -1014,7 +1014,7 @@ namespace midimagic {
                         m_menu_state->notify(a);
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
-                    auto& out_port = m_inventory->get_output_port(m_port_number-1);
+                    auto out_port = m_inventory->get_output_port(m_port_number-1);
                     m_port_group.add_port(out_port);
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,

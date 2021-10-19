@@ -40,9 +40,9 @@ namespace midimagic {
         add_port_group(system_pg_it_by_id(system_pg_id));
     }
 
-    output_port& inventory::get_output_port(const u8 port_number) {
+    std::shared_ptr<output_port> inventory::get_output_port(const u8 port_number) {
         for (auto &port: m_system_ports) {
-            if (port.get_port_number() == port_number) {
+            if (port->get_port_number() == port_number) {
                 return port;
             }
         }
@@ -90,20 +90,20 @@ namespace midimagic {
         ad57x4::dac_channel dac_ch;
         if (config_port_number < 4) {
             dac_ch = static_cast<ad57x4::dac_channel>(config_port_number);
-            m_system_ports.emplace_back(
+            m_system_ports.push_back(std::make_shared<output_port>(
                 port_number2digital_pin[config_port_number],
                 dac_ch,
                 m_dac0,
                 m_menu_q,
-                config_port_number);
+                config_port_number));
         } else {
             dac_ch = static_cast<ad57x4::dac_channel>(config_port_number - 4);
-            m_system_ports.emplace_back(
+            m_system_ports.push_back(std::make_shared<output_port>(
                 port_number2digital_pin[config_port_number],
                 dac_ch,
                 m_dac1,
                 m_menu_q,
-                config_port_number);
+                config_port_number));
         }
     }
 
@@ -117,7 +117,7 @@ namespace midimagic {
         // assign output_ports
         for (auto &portnumber_in_config: config_pg_it->output_port_numbers) {
             for (auto &system_port: m_system_ports) {
-                if (portnumber_in_config == system_port.get_port_number()) {
+                if (portnumber_in_config == system_port->get_port_number()) {
                     new_pg->add_port(system_port);
                 }
             }
@@ -172,7 +172,7 @@ namespace midimagic {
 
     const bool inventory::port_exists(const u8 port_number) const {
         for (auto &system_port: m_system_ports) {
-            if (system_port.get_port_number() == port_number) {
+            if (system_port->get_port_number() == port_number) {
                 return true;
             }
         }

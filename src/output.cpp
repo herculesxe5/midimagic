@@ -198,16 +198,16 @@ namespace midimagic {
         // nothing to do
     }
 
-    void output_demux::add_output(output_port p) {
+    void output_demux::add_output(std::shared_ptr<output_port> p) {
         for (auto& port: m_ports) {
-            if (port->get_port_number() == p.get_port_number()) {
+            if (port->get_port_number() == p->get_port_number()) {
                 return;
             }
         }
-        m_ports.emplace_back(std::make_unique<output_port>(p));
+        m_ports.push_back(std::move(p));
     }
 
-    const std::vector<std::unique_ptr<output_port>>& output_demux::get_output() const {
+    const std::vector<std::shared_ptr<output_port>>& output_demux::get_output() const {
         return m_ports;
     }
 

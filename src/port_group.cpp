@@ -101,7 +101,7 @@ namespace midimagic {
         }
         if (m_demux) {
             for (auto& port: m_demux->get_output()) {
-                new_demux->add_output(std::move(*port));
+                new_demux->add_output(std::move(port));
             }
         }
         m_demux = std::move(new_demux);
@@ -151,7 +151,7 @@ namespace midimagic {
         return m_input_channel;
     }
 
-    void port_group::add_port(output_port port) {
+    void port_group::add_port(std::shared_ptr<output_port> port) {
         m_demux->add_output(port);
     }
 

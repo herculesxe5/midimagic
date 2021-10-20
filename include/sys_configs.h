@@ -6,42 +6,59 @@
 
 namespace midimagic {
     struct inventory::output_port_config port0_conf = {
-        .port_number = 0
+        .port_number = 0,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port1_conf = {
-        .port_number = 1
+        .port_number = 1,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port2_conf = {
-        .port_number = 2
+        .port_number = 2,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port3_conf = {
-        .port_number = 3
+        .port_number = 3,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port4_conf = {
-        .port_number = 4
+        .port_number = 4,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port5_conf = {
-        .port_number = 5
+        .port_number = 5,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port6_conf = {
-        .port_number = 6
+        .port_number = 6,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::output_port_config port7_conf = {
-        .port_number = 7
+        .port_number = 7,
+        .clock_rate = 24,
+        .velocity_output = false
     };
 
     struct inventory::port_group_config default_polyphonic_pg = {
         .id = 0,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
-        .input_types = {midi_message::message_type::NOTE_ON, midi_message::message_type::NOTE_OFF},
+        .cont_controller_number = 0,
+        .input_types = {midi_message::message_type::NOTE_ON, midi_message::message_type::NOTE_OFF, midi_message::message_type::PITCH_BEND},
         .output_port_numbers = {0, 1, 2}
     };
 
@@ -49,6 +66,7 @@ namespace midimagic {
         .id = 1,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
+        .cont_controller_number = 0,
         .input_types = {midi_message::message_type::CLOCK},
         .output_port_numbers = {7}
     };
@@ -57,6 +75,7 @@ namespace midimagic {
         .id = 2,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
+        .cont_controller_number = 0,
         .input_types = {midi_message::message_type::PITCH_BEND},
         .output_port_numbers = {3}
     };
@@ -65,6 +84,7 @@ namespace midimagic {
         .id = 3,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
+        .cont_controller_number = 1,
         .input_types = {midi_message::message_type::CONTROL_CHANGE},
         .output_port_numbers = {4}
     };

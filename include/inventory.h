@@ -22,12 +22,15 @@ namespace midimagic {
         };
         struct output_port_config {
             u8 port_number;
+            u8 clock_rate;
+            bool velocity_output;
         };
 
         struct port_group_config {
             u8 id;
             demux_type demux;
             u8 midi_channel;
+            u8 cont_controller_number;
             std::vector<midi_message::message_type> input_types;
             std::vector<u8> output_port_numbers;
         };
@@ -54,6 +57,7 @@ namespace midimagic {
         void submit_portgroup_delete(const u8 system_pg_id); // inform inventory about deleted port group, updates system config
         void submit_portgroup_add(const u8 system_pg_id); // inform inventory about new port group, updates system config
         std::shared_ptr<output_port> get_output_port(const u8 port_number); // returns pointer to output_port by port number, creates object if needed
+        void submit_output_port_change(const u8 system_port_number); // inform inventory about output_port change, updates system config
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         void apply_config(const struct system_config& new_config); // setup system as in new_config
     private:
@@ -78,9 +82,13 @@ namespace midimagic {
         void add_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it);
         // deletes port group from system_config
         void forget_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it);
+        // update system_config with new properties
+        void rescan_output_port(const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it);
 
         std::vector<struct port_group_config>::iterator config_pg_it_by_id(u8 config_pg_id);
+        std::vector<struct output_port_config>::iterator config_port_it_by_number(u8 config_port_number);
         const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it_by_id(const u8 system_pg_id) const;
+        const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it_by_number(const u8 system_port_number) const;
         const bool port_exists(const u8 port_number) const;
     };
 } // namespace midimagic

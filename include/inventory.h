@@ -59,6 +59,7 @@ namespace midimagic {
         std::shared_ptr<output_port> get_output_port(const u8 port_number); // returns pointer to output_port by port number, creates object if needed
         void submit_output_port_change(const u8 system_port_number); // inform inventory about output_port change, updates system config
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
+        std::shared_ptr<menu_action_queue> get_menu_queue();
         void apply_config(const struct system_config& new_config); // setup system as in new_config
     private:
         std::shared_ptr<group_dispatcher> m_group_dispatcher;

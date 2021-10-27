@@ -66,6 +66,10 @@ namespace midimagic {
         return m_group_dispatcher;
     }
 
+    std::shared_ptr<menu_action_queue> inventory::get_menu_queue() {
+        return m_menu_q;
+    }
+
     void inventory::apply_config(const struct system_config& new_config) {
         //FIXME check config for sane values
         flush();

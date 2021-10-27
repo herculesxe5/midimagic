@@ -2,7 +2,10 @@
 
 namespace midimagic {
     group_dispatcher::group_dispatcher()
-        : m_last_group_id(0) {
+        : m_last_group_id(0)
+        , m_capture_mode(false)
+        , m_capture_ready(false)
+        , m_captured_message(midi_message::message_type::NOTE_OFF, 1, 0, 0) {
         // nothing to do
     }
 
@@ -35,7 +38,26 @@ namespace midimagic {
         if (m.type == midi_message::message_type::PROGRAM_CHANGE) {
             return;
         }
+        if (m_capture_mode) {
+            m_captured_message = m;
+            m_capture_ready = true;
+            m_capture_mode = false;
+            return;
+        }
         sieve(m);
+    }
+
+    void group_dispatcher::activate_capture_mode() {
+        m_capture_ready = false;
+        m_capture_mode = true;
+    }
+
+    const bool group_dispatcher::got_capture() const {
+        return m_capture_ready;
+    }
+
+    const midi_message group_dispatcher::get_capture() const {
+        return m_captured_message;
     }
 
     void group_dispatcher::sieve(midi_message& m) {
@@ -164,6 +186,7 @@ namespace midimagic {
     }
 
     void port_group::set_cc(const u8 cc_number) {
+        //FIXME if controller_number is in the LSB range, save corresponding MSB controller number
         m_cc_number = cc_number;
     }
 

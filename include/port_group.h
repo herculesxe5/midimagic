@@ -20,9 +20,14 @@ namespace midimagic {
         const std::vector<std::unique_ptr<port_group>>& get_port_groups() const;
 
         void add_message(midi_message& m);
+        void activate_capture_mode();
+        const bool got_capture() const;
+        const midi_message get_capture() const;
     private:
         std::vector<std::unique_ptr<port_group>> m_port_groups;
         u8 m_last_group_id;
+        bool m_capture_mode, m_capture_ready;
+        midi_message m_captured_message;
 
         void sieve(midi_message& m);
         const u8 get_next_id();

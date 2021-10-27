@@ -167,7 +167,7 @@ namespace midimagic {
         virtual void notify(const menu_action &a) override;
     private:
         const menu_pane m_io_switch;
-        const char *m_ins_config_menu_items[5];
+        const char *m_ins_config_menu_items[6];
         const char *m_outs_config_menu_items[4];
         const NanoRect m_config_menu_dimensions;
         std::unique_ptr<LcdGfxMenu> config_menu;
@@ -229,6 +229,25 @@ namespace midimagic {
         virtual void notify(const menu_action &a) override;
     private:
         u8 m_cc_number;
+    };
+
+    class config_portgroup_learn_msg_view : public portgroup_view {
+    public:
+        config_portgroup_learn_msg_view(DisplaySSD1306_128x64_I2C &d,
+                                        std::shared_ptr<menu_state> menu_state,
+                                        std::shared_ptr<inventory> invent,
+                                        const std::vector<std::unique_ptr<port_group>>::const_iterator group_it);
+        config_portgroup_learn_msg_view(const config_portgroup_learn_msg_view&) = delete;
+        virtual ~config_portgroup_learn_msg_view();
+
+        virtual void notify(const menu_action &a) override;
+    private:
+        u8 m_control;
+        midi_message m_capture_msg;
+        const char *m_learn_menu_items[3];
+        const NanoRect m_learn_menu_dimensions;
+        std::unique_ptr<LcdGfxMenu> learn_menu;
+        std::shared_ptr<menu_action_queue> m_menu_q;
     };
 
     class config_portgroup_rem_msg_view : public portgroup_view {

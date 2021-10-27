@@ -606,7 +606,8 @@ namespace midimagic {
                                   "Add MIDI input",
                                   "Remove MIDI input",
                                   "Delete this portgroup",
-                                  "Set Controller"}
+                                  "Set Controller",
+                                  "Learn MIDI input"}
         , m_outs_config_menu_items{"Set demuxer",
                                    "Add port",
                                    "Remove port",
@@ -723,6 +724,13 @@ namespace midimagic {
                                                                                 m_menu_state,
                                                                                 m_inventory,
                                                                                 m_cur_group_it);
+                        m_menu_state->register_view(v);
+                    } else if ((config_menu->selection() == 5) && (m_io_switch == menu_pane::INS_PANE)) {
+                        // Switch to config_portgroup_learn_msg_view
+                        auto v = std::make_shared<config_portgroup_learn_msg_view>(m_display,
+                                                                                   m_menu_state,
+                                                                                   m_inventory,
+                                                                                   m_cur_group_it);
                         m_menu_state->register_view(v);
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
@@ -1004,6 +1012,127 @@ namespace midimagic {
                 break;
             default :
                 // nothing to do
+                break;
+        }
+    }
+
+    config_portgroup_learn_msg_view::config_portgroup_learn_msg_view(
+        DisplaySSD1306_128x64_I2C &d,
+        std::shared_ptr<menu_state> menu_state,
+        std::shared_ptr<inventory> invent,
+        const std::vector<std::unique_ptr<port_group>>::const_iterator group_it)
+        : portgroup_view(d, menu_state, invent, group_it)
+        , m_control(0)
+        , m_capture_msg(midi_message::message_type::NOTE_OFF, 1, 0, 0)
+        , m_menu_q(m_inventory->get_menu_queue())
+        , m_learn_menu_items{"Add MIDI message",
+                             "Recapture",
+                             "Cancel"}
+        , m_learn_menu_dimensions{NanoPoint{0, 24}, NanoPoint{127, 63}}
+        {
+            learn_menu = std::make_unique<LcdGfxMenu>(m_learn_menu_items,
+                                                      sizeof(m_learn_menu_items) / sizeof(char *),
+                                                      m_learn_menu_dimensions);
+    }
+
+    config_portgroup_learn_msg_view::~config_portgroup_learn_msg_view() {
+        // nothing to do
+    }
+
+    void config_portgroup_learn_msg_view::notify(const menu_action &a) {
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.clear();
+                m_display.setFixedFont(ssd1306xled_font6x8);
+                if (m_control == 0) {
+                    m_display.printFixed(4, 0, "Learn input:", STYLE_NORMAL);
+                    m_display.printFixed(4, 16, "Press button", STYLE_NORMAL);
+                    m_display.printFixed(4, 24, "to start capture", STYLE_NORMAL);
+                } else if (m_control == 1) {
+                    m_display.printFixed(4, 16, "Waiting for input...", STYLE_NORMAL);
+                    if (m_group_dispatcher.got_capture()) {
+                        m_capture_msg = m_group_dispatcher.get_capture();
+                        m_control++;
+                        menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                        m_menu_state->notify(a);
+                    } else {
+                        menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                        m_menu_q->add_menu_action(a);
+                    }
+                } else if (m_control == 2) {
+                    m_display.printFixed(4, 0, "Got message:", STYLE_NORMAL);
+                    m_display.printFixed(4, 8, midi_msgtype2name(m_capture_msg.type), STYLE_NORMAL);
+                    m_display.printFixed(4, 16, "Ch:");
+                    m_display.setTextCursor(22, 16);
+                    m_display.print(m_capture_msg.channel);
+                    if (m_capture_msg.type == midi_message::message_type::CONTROL_CHANGE) {
+                        m_display.printFixed(70, 8, "Contr:", STYLE_NORMAL);
+                        m_display.setTextCursor(106, 8);
+                        m_display.print(m_capture_msg.data0);
+                    }
+                    learn_menu->show(m_display);
+                }
+                break;
+            case menu_action::kind::ROT_ACTIVITY :
+                if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    m_control++;
+                    if (m_control == 1) {
+                        auto gd = m_inventory->get_group_dispatcher();
+                        gd->activate_capture_mode();
+                        menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                        m_menu_q->add_menu_action(a);
+
+                    } else if (m_control == 3 && learn_menu->selection() == 0) {
+                        m_port_group.add_midi_input(m_capture_msg.type);
+                        m_port_group.set_midi_channel(m_capture_msg.channel);
+                        if (m_capture_msg.type == midi_message::message_type::CONTROL_CHANGE) {
+                            m_port_group.set_cc(m_capture_msg.data0);
+                        }
+                        // inform inventory about change
+                        m_inventory->submit_portgroup_change(m_port_group.get_id());
+                        // Switch back to portgroup_view
+                        auto v = std::make_shared<portgroup_view>(m_display,
+                                                                  m_menu_state,
+                                                                  m_inventory,
+                                                                  m_cur_group_it);
+                        m_menu_state->register_view(v);
+
+                    } else if (m_control == 3 && learn_menu->selection() == 1) {
+                        m_control = 1;
+                        auto gd = m_inventory->get_group_dispatcher();
+                        gd->activate_capture_mode();
+                        menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                        m_menu_q->add_menu_action(a);
+
+                    } else if (m_control == 3 && learn_menu->selection() == 2) {
+                        // Switch back to config input menu
+                        auto v = std::make_shared<config_portgroup_view>(m_display,
+                                                                         m_menu_state,
+                                                                         m_inventory,
+                                                                         m_cur_group_it,
+                                                                         menu_pane::INS_PANE);
+                        m_menu_state->register_view(v);
+                    }
+
+                } else if (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
+                    if (m_control == 2) {
+                        learn_menu->down();
+                        learn_menu->show(m_display);
+                    }
+                } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
+                    if (m_control == 2) {
+                        learn_menu->up();
+                        learn_menu->show(m_display);
+                    }
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    // Switch back to config input menu
+                    auto v = std::make_shared<config_portgroup_view>(m_display,
+                                                                     m_menu_state,
+                                                                     m_inventory,
+                                                                     m_cur_group_it,
+                                                                     menu_pane::INS_PANE);
+                    m_menu_state->register_view(v);
+                }
                 break;
         }
     }

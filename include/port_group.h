@@ -55,6 +55,8 @@ namespace midimagic {
         const u8 get_id() const;
         void set_cc(const u8 cc_number);
         const u8 get_cc() const;
+        void set_transpose(const i8 transpose_offset);
+        const i8 get_transpose() const;
 
         void send_input(midi_message& m);
     private:
@@ -65,6 +67,7 @@ namespace midimagic {
         u8 m_input_channel;
         u8 m_cc_number;
         u8 m_cc_MSB_value;
+        i8 m_transpose_offset;
         const u8 k_id;
     };
 } // namespace midimagic

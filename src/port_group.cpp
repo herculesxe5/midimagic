@@ -97,7 +97,8 @@ namespace midimagic {
         : k_id(id)
         , m_input_channel(channel)
         , m_cc_number(0)
-        , m_cc_MSB_value(0) {
+        , m_cc_MSB_value(0)
+        , m_transpose_offset(0) {
         set_demux(dt);
     }
 
@@ -194,16 +195,36 @@ namespace midimagic {
         return m_cc_number;
     }
 
+    void port_group::set_transpose(const i8 transpose_offset) {
+        m_transpose_offset = transpose_offset;
+    }
+
+    const i8 port_group::get_transpose() const {
+        return m_transpose_offset;
+    }
+
     void port_group::send_input(midi_message& m) {
         if (m.type == midi_message::message_type::NOTE_OFF) {
-            m_demux->remove_note(m);
+            if (m_transpose_offset == 0) {
+                m_demux->remove_note(m);
+            } else {
+                midi_message transposed_msg = m;
+                transposed_msg.data0 += m_transpose_offset;
+                m_demux->remove_note(transposed_msg);
+            }
         } else if (m.type == midi_message::message_type::CONTROL_CHANGE) {
             if (m_cc_number == m.data0 || m_cc_number == m.data0 - 32) {
                 auto cc_msg = parse_cc(m);
                 m_demux->add_note(cc_msg);
             }
         } else {
-            m_demux->add_note(m);
+            if ((m.type == midi_message::message_type::NOTE_ON) && (m_transpose_offset != 0)) {
+                midi_message transposed_msg = m;
+                transposed_msg.data0 += m_transpose_offset;
+                m_demux->add_note(transposed_msg);
+            } else {
+                m_demux->add_note(m);
+            }
         }
     }
 

@@ -611,7 +611,8 @@ namespace midimagic {
         , m_outs_config_menu_items{"Set demuxer",
                                    "Add port",
                                    "Remove port",
-                                   "Delete this portgroup"}
+                                   "Delete this portgroup",
+                                   "Set transpose"}
         , m_config_menu_dimensions{NanoPoint{0, 8}, NanoPoint{127, 63}}
         {
         switch (m_io_switch) {
@@ -724,6 +725,13 @@ namespace midimagic {
                                                                                 m_menu_state,
                                                                                 m_inventory,
                                                                                 m_cur_group_it);
+                        m_menu_state->register_view(v);
+                    } else if ((config_menu->selection() == 4) && (m_io_switch == menu_pane::OUTS_PANE)) {
+                        // Switch to config_portgroup_transpose_view
+                        auto v = std::make_shared<config_portgroup_transpose_view>(m_display,
+                                                                                   m_menu_state,
+                                                                                   m_inventory,
+                                                                                   m_cur_group_it);
                         m_menu_state->register_view(v);
                     } else if ((config_menu->selection() == 5) && (m_io_switch == menu_pane::INS_PANE)) {
                         // Switch to config_portgroup_learn_msg_view
@@ -1335,6 +1343,66 @@ namespace midimagic {
                 }
                 break;
             default :
+                // nothing to do
+                break;
+        }
+    }
+
+    config_portgroup_transpose_view::config_portgroup_transpose_view(
+        DisplaySSD1306_128x64_I2C &d,
+        std::shared_ptr<menu_state> menu_state,
+        std::shared_ptr<inventory> invent,
+        const std::vector<std::unique_ptr<port_group>>::const_iterator group_it)
+        : portgroup_view(d, menu_state, invent, group_it)
+        , m_transpose_offset(m_port_group.get_transpose()) {
+        // nothing to do
+    }
+
+    config_portgroup_transpose_view::~config_portgroup_transpose_view() {
+        // nothing to do
+    }
+
+    void config_portgroup_transpose_view::notify(const menu_action &a) {
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.clear();
+                m_display.setFixedFont(ssd1306xled_font6x8);
+                m_display.printFixed(4, 0, "Set transpose:", STYLE_NORMAL);
+                m_display.setTextCursor(4, 16);
+                m_display.print(m_transpose_offset);
+                m_display.printFixed(22, 16, "halftones", STYLE_NORMAL);
+                break;
+            case menu_action::kind::ROT_ACTIVITY :
+                if        (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
+                    m_transpose_offset++;
+                    // Trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+                } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
+                    m_transpose_offset--;
+                    // Trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    m_port_group.set_transpose(m_transpose_offset);
+                    m_inventory->submit_portgroup_change(m_port_group.get_id());
+                    // Switch back to portgroup_view
+                    auto v = std::make_shared<portgroup_view>(m_display,
+                                                              m_menu_state,
+                                                              m_inventory,
+                                                              m_cur_group_it);
+                    m_menu_state->register_view(v);
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    // Switch back to config output menu
+                    auto v = std::make_shared<config_portgroup_view>(m_display,
+                                                                     m_menu_state,
+                                                                     m_inventory,
+                                                                     m_cur_group_it,
+                                                                     menu_pane::OUTS_PANE);
+                    m_menu_state->register_view(v);
+                }
+                break;
+            default:
                 // nothing to do
                 break;
         }

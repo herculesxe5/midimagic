@@ -31,6 +31,7 @@ namespace midimagic {
             demux_type demux;
             u8 midi_channel;
             u8 cont_controller_number;
+            i8 transpose_offset;
             std::vector<midi_message::message_type> input_types;
             std::vector<u8> output_port_numbers;
         };

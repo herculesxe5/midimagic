@@ -58,6 +58,7 @@ namespace midimagic {
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .cont_controller_number = 0,
+        .transpose_offset = 0,
         .input_types = {midi_message::message_type::NOTE_ON, midi_message::message_type::NOTE_OFF, midi_message::message_type::PITCH_BEND},
         .output_port_numbers = {0, 1, 2}
     };
@@ -67,6 +68,7 @@ namespace midimagic {
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .cont_controller_number = 0,
+        .transpose_offset = 0,
         .input_types = {midi_message::message_type::CLOCK},
         .output_port_numbers = {7}
     };
@@ -76,6 +78,7 @@ namespace midimagic {
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .cont_controller_number = 0,
+        .transpose_offset = 0,
         .input_types = {midi_message::message_type::PITCH_BEND},
         .output_port_numbers = {3}
     };
@@ -85,6 +88,7 @@ namespace midimagic {
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
         .cont_controller_number = 1,
+        .transpose_offset = 0,
         .input_types = {midi_message::message_type::CONTROL_CHANGE},
         .output_port_numbers = {4}
     };

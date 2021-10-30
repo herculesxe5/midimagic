@@ -137,6 +137,8 @@ namespace midimagic {
         auto& new_pg = (m_group_dispatcher->get_port_groups()).back();
         // set cc number
         new_pg->set_cc(config_pg_it->cont_controller_number);
+        // set transpose
+        new_pg->set_transpose(config_pg_it->transpose_offset);
         // add the midi inputs
         for (auto &msg_type: config_pg_it->input_types) {
             new_pg->add_midi_input(msg_type);
@@ -157,6 +159,7 @@ namespace midimagic {
         config_pg_it->demux = ((*system_pg_it)->get_demux()).get_type();
         config_pg_it->midi_channel = (*system_pg_it)->get_midi_channel();
         config_pg_it->cont_controller_number = (*system_pg_it)->get_cc();
+        config_pg_it->transpose_offset = (*system_pg_it)->get_transpose();
         config_pg_it->input_types.clear();
         for (auto &system_pg_input: (*system_pg_it)->get_msg_types()) {
             config_pg_it->input_types.push_back(system_pg_input);

@@ -1157,8 +1157,7 @@ namespace midimagic {
         m_msg_names = new char*[m_msg_types.size()];
         u8 i = 0;
         for (auto &msg_type: m_msg_types) {
-            //FIXME this is broken
-            strcpy(m_msg_names[i], midi_msgtype2name(msg_type));
+            m_msg_names[i] = const_cast<char *>(midi_msgtype2name(msg_type));
             i++;
         }
         m_message_menu = std::make_unique<LcdGfxMenu>(const_cast<const char**>(m_msg_names),

@@ -187,8 +187,11 @@ namespace midimagic {
     }
 
     void port_group::set_cc(const u8 cc_number) {
-        //FIXME if controller_number is in the LSB range, save corresponding MSB controller number
-        m_cc_number = cc_number;
+        if ((cc_number > 31) && (cc_number < 64)) {
+            m_cc_number = cc_number - 32;
+        } else {
+            m_cc_number = cc_number;
+        }
     }
 
     const u8 port_group::get_cc() const {

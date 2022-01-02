@@ -62,7 +62,7 @@ namespace midimagic {
 
     void group_dispatcher::sieve(midi_message& m) {
         // system common and real time messages are channel independent and to be send to all receivers
-        if (m.type > 0xf0) {
+        if (m.type > midi_message::message_type::SYSTEM_MESSAGE) {
             for (auto &port_group: m_port_groups) {
                 switch (m.type) {
                     case midi_message::message_type::START :

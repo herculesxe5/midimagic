@@ -14,6 +14,7 @@ struct midi_message {
         PROGRAM_CHANGE,
         CHANNEL_PRESSURE,
         PITCH_BEND,
+        SYSTEM_MESSAGE = 0xf0, // start of system message types, no actual type associated
         CLOCK = 0xf8,
         START = 0xfa,
         CONTINUE,

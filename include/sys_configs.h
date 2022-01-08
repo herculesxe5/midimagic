@@ -2,58 +2,58 @@
 #define MIDIMAGIC_SYS_CONFIGS_H
 
 #include "common.h"
-#include "inventory.h"
+#include "system_config.h"
 
 namespace midimagic {
-    struct inventory::output_port_config port0_conf = {
+    struct output_port_config port0_conf = {
         .port_number = 0,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port1_conf = {
+    struct output_port_config port1_conf = {
         .port_number = 1,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port2_conf = {
+    struct output_port_config port2_conf = {
         .port_number = 2,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port3_conf = {
+    struct output_port_config port3_conf = {
         .port_number = 3,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port4_conf = {
+    struct output_port_config port4_conf = {
         .port_number = 4,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port5_conf = {
+    struct output_port_config port5_conf = {
         .port_number = 5,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port6_conf = {
+    struct output_port_config port6_conf = {
         .port_number = 6,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::output_port_config port7_conf = {
+    struct output_port_config port7_conf = {
         .port_number = 7,
         .clock_rate = 24,
         .velocity_output = false
     };
 
-    struct inventory::port_group_config default_polyphonic_pg = {
+    struct port_group_config default_polyphonic_pg = {
         .id = 0,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
@@ -63,7 +63,7 @@ namespace midimagic {
         .output_port_numbers = {0, 1, 2}
     };
 
-    struct inventory::port_group_config test_pg1 = {
+    struct port_group_config test_pg1 = {
         .id = 1,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
@@ -73,7 +73,7 @@ namespace midimagic {
         .output_port_numbers = {7}
     };
 
-    struct inventory::port_group_config test_pg2 = {
+    struct port_group_config test_pg2 = {
         .id = 2,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
@@ -83,7 +83,7 @@ namespace midimagic {
         .output_port_numbers = {3}
     };
 
-    struct inventory::port_group_config test_cc = {
+    struct port_group_config test_cc = {
         .id = 3,
         .demux = demux_type::IDENTIC,
         .midi_channel = 1,
@@ -93,7 +93,7 @@ namespace midimagic {
         .output_port_numbers = {4}
     };
 
-    const struct inventory::system_config default_config = (inventory::system_config) {
+    const struct system_config default_config = (system_config) {
         .system_ports = {port0_conf, port1_conf, port2_conf, port3_conf, port4_conf, port7_conf},
         .system_port_groups = {default_polyphonic_pg, test_pg1, test_pg2, test_cc}
     };

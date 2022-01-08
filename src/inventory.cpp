@@ -187,7 +187,7 @@ namespace midimagic {
         port_config->velocity_output = (*system_port_it)->get_velocity_switch();
     }
 
-    std::vector<struct inventory::port_group_config>::iterator inventory::config_pg_it_by_id(u8 config_pg_id) {
+    std::vector<struct port_group_config>::iterator inventory::config_pg_it_by_id(u8 config_pg_id) {
         for (auto it = m_system_config.system_port_groups.begin();
             it != m_system_config.system_port_groups.end(); ) {
             if (it->id == config_pg_id) {
@@ -197,7 +197,7 @@ namespace midimagic {
         }
     }
 
-    std::vector<struct inventory::output_port_config>::iterator inventory::config_port_it_by_number(u8 config_port_number) {
+    std::vector<struct output_port_config>::iterator inventory::config_port_it_by_number(u8 config_port_number) {
         for (auto it = m_system_config.system_ports.begin();
             it != m_system_config.system_ports.end(); ) {
             if (it->port_number == config_port_number) {

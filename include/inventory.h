@@ -2,6 +2,7 @@
 #define MIDIMAGIC_INVENTORY_H
 
 #include "common.h"
+#include "system_config.h"
 #include "port_group.h"
 #include "output.h"
 #include "ad57x4.h"
@@ -19,26 +20,6 @@ namespace midimagic {
             PB4, // port5
             PB3, // port6
             PA15 // port7
-        };
-        struct output_port_config {
-            u8 port_number;
-            u8 clock_rate;
-            bool velocity_output;
-        };
-
-        struct port_group_config {
-            u8 id;
-            demux_type demux;
-            u8 midi_channel;
-            u8 cont_controller_number;
-            i8 transpose_offset;
-            std::vector<midi_message::message_type> input_types;
-            std::vector<u8> output_port_numbers;
-        };
-
-        struct system_config {
-            std::vector<struct output_port_config> system_ports;
-            std::vector<struct port_group_config> system_port_groups;
         };
 
         inventory(std::shared_ptr<group_dispatcher> gd,

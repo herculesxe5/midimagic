@@ -7,6 +7,7 @@
 #include "output.h"
 #include "ad57x4.h"
 #include "midi_types.h"
+#include "config_archive.h"
 
 namespace midimagic {
     class inventory {
@@ -43,6 +44,9 @@ namespace midimagic {
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         std::shared_ptr<menu_action_queue> get_menu_queue();
         void apply_config(const struct system_config& new_config); // setup system as in new_config
+        void load_config_from_flash();
+        void save_system_state();
+
     private:
         std::shared_ptr<group_dispatcher> m_group_dispatcher;
         std::shared_ptr<menu_action_queue> m_menu_q;
@@ -73,6 +77,7 @@ namespace midimagic {
         const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it_by_id(const u8 system_pg_id) const;
         const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it_by_number(const u8 system_port_number) const;
         const bool port_exists(const u8 port_number) const;
+        const struct system_config sanitise_config(const struct system_config in_config);
     };
 } // namespace midimagic
 #endif // MIDIMAGIC_INVENTORY_H

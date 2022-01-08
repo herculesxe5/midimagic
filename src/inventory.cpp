@@ -101,6 +101,18 @@ namespace midimagic {
         }
     }
 
+    void inventory::load_config_from_flash() {
+        config_archive flash_config;
+        if (flash_config.loadon() == config_archive::operation_result::SUCCESS) {
+            apply_config(flash_config.spellout());
+        }
+    }
+
+    void inventory::save_system_state() {
+        config_archive new_flash_config(m_system_config);
+        config_archive::operation_result return_code = new_flash_config.writeout();
+    }
+
     void inventory::flush() {
         auto& pg_vector = m_group_dispatcher->get_port_groups();
         while (!pg_vector.empty()) {
@@ -235,6 +247,82 @@ namespace midimagic {
             }
         }
         return false;
+    }
+
+    const struct system_config inventory::sanitise_config(const struct system_config in_config) {
+        // FIXME add flag if change happend
+        struct system_config out_config;
+        // check for unique output port numbers and numbers in range (0...7)
+        for (auto it = in_config.system_ports.begin(); it != in_config.system_ports.end(); ) {
+            if (it->port_number > 7) {
+                ++it;
+                continue;
+            }
+            for (auto next_it = std::next(it, 1); next_it != in_config.system_ports.end(); ) {
+                // if a following output port config has the same port number ignore current
+                if (next_it->port_number == it->port_number) {
+                    ++it;
+                    break;
+                }
+                ++next_it;
+            }
+            // all good, copy config into out struct and move on
+            out_config.system_ports.emplace_back(*it);
+            ++it;
+        }
+
+        u8 next_free_id = 0;
+        // get highest id in vector
+        for (auto it = in_config.system_port_groups.begin(); it != in_config.system_port_groups.end(); ) {
+            if (it->id > next_free_id) {
+                next_free_id = it->id;
+            }
+            ++it;
+        }
+        next_free_id++;
+
+        for (auto it = in_config.system_port_groups.begin(); it != in_config.system_port_groups.end(); ) {
+            out_config.system_port_groups.emplace_back(*it);
+            // check for unique portgroup ids
+            for (auto next_it = std::next(it, 1); next_it != in_config.system_port_groups.end(); ) {
+                // if a following portgroup config has the same id assign next free to current
+                if (next_it->id == it->id) {
+                    out_config.system_port_groups.back().id = next_free_id;
+                    next_free_id++;
+                    break;
+                }
+                ++next_it;
+            }
+            // check midi channel in range of (1...16)
+            if ((it->midi_channel < 1) || (it->midi_channel > 16)) {
+                out_config.system_port_groups.back().midi_channel = 1;
+            }
+            // cc value must be in range of (0...127)
+            if (it->cont_controller_number > 127) {
+                out_config.system_port_groups.back().cont_controller_number = 127;
+            }
+            // each output port number in output_port_numbers vector must be in range (0...7)
+            // and have corresponding output port config
+            for (auto outport_it = it->output_port_numbers.begin(); outport_it != it->output_port_numbers.end(); ) {
+                if ((*outport_it) > 7) {
+                    // find element in out_config and erase
+                    for (auto outconfig_portnumber_it = out_config.system_port_groups.back().output_port_numbers.begin();
+                    outconfig_portnumber_it != out_config.system_port_groups.back().output_port_numbers.end(); ) {
+                        if ((*outconfig_portnumber_it) == (*outport_it)) {
+                            out_config.system_port_groups.back().output_port_numbers.erase(outconfig_portnumber_it);
+                            break;
+                        }
+                        ++outconfig_portnumber_it;
+                    }
+                    ++outport_it;
+                    continue;
+                }
+                //FIXME add config exists check
+                ++outport_it;
+            }
+
+            ++it;
+        }
     }
 
 } // namespace midimagic

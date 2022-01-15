@@ -323,6 +323,7 @@ namespace midimagic {
 
             ++it;
         }
+        return out_config;
     }
 
 } // namespace midimagic

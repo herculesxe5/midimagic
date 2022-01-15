@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "midimagic_components")(type "KiCad")(uri "${KIPRJMOD}/midimagic_components.kicad_sym")(options "")(descr ""))
+)

@@ -61,6 +61,7 @@ namespace midimagic {
                     // calculate dac level
                     steps = delta * 136 << 2;
                 } else {
+                    //FIXME adjust voltage scaling
                     steps = msg.data1 << 2;
                 }
                 break;
@@ -85,7 +86,6 @@ namespace midimagic {
                 break;
             case midi_message::message_type::PITCH_BEND :
                 inhibit_digital_pin = true;
-                //FIXME test this
                 // reassemble signed integer
                 PB_value = (i16) (msg.data0 << 8);
                 PB_value = PB_value | msg.data1;

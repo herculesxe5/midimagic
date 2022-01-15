@@ -29,8 +29,7 @@ namespace midimagic {
 
         // check for magic
         if (((eeprom_buffered_read_byte(static_header_field::MAGIC0) << 8)
-            + eeprom_buffered_read_byte(static_header_field::MAGIC1))
-            != MAGIC) {
+            + eeprom_buffered_read_byte(static_header_field::MAGIC1)) != MAGIC) {
                 // no joy, abort
                 return operation_result::NO_ARCHIVE_FOUND;
         }
@@ -46,6 +45,7 @@ namespace midimagic {
         if (total_size < static_header_field::FIRST_CONFIG_BASE_ADDR) {
             return operation_result::ARCHIVE_EMPTY;
         }
+        //FIXME check if size matches!
 
         // get config counts
         u8 port_config_count = eeprom_buffered_read_byte(static_header_field::PORT_CONFIG_COUNT);
@@ -249,8 +249,8 @@ namespace midimagic {
                 {
                 struct output_port_config new_port;
                 new_port.port_number = eeprom_buffered_read_byte(base_addr);
-                new_port.clock_rate = eeprom_buffered_read_byte(base_addr + 1);
-                new_port.velocity_output = eeprom_buffered_read_byte(base_addr + 2);
+                new_port.clock_rate = eeprom_buffered_read_byte(base_addr + v1_port_config_field::CLOCK_RATE);
+                new_port.velocity_output = eeprom_buffered_read_byte(base_addr + v1_port_config_field::VELOCITY);
                 m_system_state.system_ports.push_back(new_port);
                 break;
                 }
@@ -258,29 +258,36 @@ namespace midimagic {
                 {
                 struct port_group_config new_pg;
                 new_pg.id = m_running_portgroup_id++;
-                //FIXME demux type value must be in range of enum type
-                new_pg.demux = static_cast<demux_type>(eeprom_buffered_read_byte(base_addr));
-                new_pg.midi_channel = eeprom_buffered_read_byte(base_addr + 1);
-                new_pg.cont_controller_number = eeprom_buffered_read_byte(base_addr + 2);
-                i8 transpose_offset;
-                if (eeprom_buffered_read_byte(base_addr + 3) >> 7) {
-                    // if signage bit is set store as negative value
-                    transpose_offset = (-1) * ((i8) (eeprom_buffered_read_byte(base_addr + 3) & 0x7f));
+                // demux type value must be in range of enum type
+                if (eeprom_buffered_read_byte(base_addr) <= demux_type::FIFO) {
+                    new_pg.demux = static_cast<demux_type>(eeprom_buffered_read_byte(base_addr));
                 } else {
-                    transpose_offset = eeprom_buffered_read_byte(base_addr + 3);
+                    new_pg.demux = demux_type::RANDOM;
+                }
+                new_pg.midi_channel = eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::MIDI_CHANNEL);
+                new_pg.cont_controller_number = eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::CC_NUMBER);
+                i8 transpose_offset;
+                if (eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::TRANSPOSE) >> 7) {
+                    // if signage bit is set store as negative value
+                    transpose_offset = (-1) * ((i8) (eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::TRANSPOSE) & 0x7f));
+                } else {
+                    transpose_offset = eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::TRANSPOSE);
                 }
                 new_pg.transpose_offset = transpose_offset;
-                const u8 midi_input_count = eeprom_buffered_read_byte(base_addr + 4);
-                const u8 outport_count = eeprom_buffered_read_byte(base_addr + 5);
+                const u8 midi_input_count = eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::INPUT_TYPE_COUNT);
+                const u8 outport_count = eeprom_buffered_read_byte(base_addr + v1_portgroup_config_field::OUTPUT_PORT_COUNT);
 
-                for (uint32_t midi_input_field = base_addr + k_fixed_portgroup_config_size;
-                    midi_input_field < (base_addr + k_fixed_portgroup_config_size + midi_input_count);
+                for (uint32_t midi_input_field = base_addr + v1_portgroup_config_field::FIRST_VARIABLE;
+                    midi_input_field < (base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count);
                     midi_input_field++) {
-                    //FIXME message_type value must be in range of enum type
+                    // message_type value must be in range of enum type
+                    if (eeprom_buffered_read_byte(midi_input_field) > midi_message::STOP) {
+                        continue;
+                    }
                     new_pg.input_types.push_back(static_cast<midi_message::message_type>(eeprom_buffered_read_byte(midi_input_field)));
                 }
-                for (uint32_t outport_field = base_addr + k_fixed_portgroup_config_size + midi_input_count;
-                    outport_field < (base_addr + k_fixed_portgroup_config_size + midi_input_count + outport_count);
+                for (uint32_t outport_field = base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count;
+                    outport_field < (base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count + outport_count);
                     outport_field++) {
                     new_pg.output_port_numbers.push_back(eeprom_buffered_read_byte(outport_field));
                 }

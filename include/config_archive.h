@@ -84,6 +84,8 @@ namespace midimagic {
         const operation_result deserialise(config_type type, uint32_t base_addr);
         void write_to_flash();
         void load_from_flash();
+        uint8_t read_eeprom_buffer(const uint32_t pos);
+        void write_eeprom_buffer(uint32_t pos, uint8_t value);
 
         struct system_config m_system_state;
         const uint32_t k_port_config_size = 3;

@@ -66,13 +66,29 @@ namespace midimagic {
         if (total_size < static_header_field::FIRST_CONFIG_BASE_ADDR) {
             return operation_result::ARCHIVE_EMPTY;
         }
-        //FIXME check if size matches!
+        if (total_size > BUFFER_SIZE) {
+            return operation_result::SIZE_MISMATCH;
+        }
 
         // get config counts
         u8 port_config_count = read_eeprom_buffer(static_header_field::PORT_CONFIG_COUNT);
         u8 portgroup_config_count = read_eeprom_buffer(static_header_field::PORTGROUP_CONFIG_COUNT);
         if (!port_config_count && !portgroup_config_count) {
             return operation_result::CORRUPT_HEADER;
+        }
+
+        // check if size matches
+        uint32_t last_config_base, check_size;
+        if (portgroup_config_count) {
+            last_config_base = get_address_to(config_type::PORTGROUP_CONFIG, portgroup_config_count - 1);
+            check_size = last_config_base + 1 + v1_portgroup_config_field::OUTPUT_PORTS;
+            check_size += read_eeprom_buffer(last_config_base + v1_portgroup_config_field::INPUT_TYPE_COUNT);
+        } else {
+            last_config_base = get_address_to(config_type::OUTPUT_PORT_CONFIG, port_config_count - 1);
+            check_size = last_config_base + 1 + v1_port_config_field::VELOCITY;
+        }
+        if (total_size != check_size) {
+            return operation_result::SIZE_MISMATCH;
         }
 
         // populate m_system_state from the buffer
@@ -109,6 +125,14 @@ namespace midimagic {
 
     const config_archive::operation_result config_archive::writeout() {
         uint32_t header_size = generate_archive_header();
+
+        // check if config fits
+        u16 predicted_size = ((u16) read_eeprom_buffer(static_header_field::SIZE0)) << 8;
+        predicted_size += read_eeprom_buffer(static_header_field::SIZE1);
+        if (predicted_size > BUFFER_SIZE) {
+            return operation_result::CONFIG_TOO_BIG;
+        }
+
         uint32_t return_config_size;
 
         for (u8 index = 0; index < m_system_state.system_ports.size(); index++) {
@@ -134,13 +158,6 @@ namespace midimagic {
                 return operation_result::ILLEGAL_CONFIG_BASE_ADDRESS;
             }
         }
-
-        //FIXME this does not work if no portgroups present
-        // write size into header before finishing
-        u16 total_size = get_address_to(config_type::PORTGROUP_CONFIG, m_system_state.system_port_groups.size() - 1);
-        total_size += return_config_size;
-        write_eeprom_buffer(static_header_field::SIZE0, (u8) (total_size >> 8));
-        write_eeprom_buffer(static_header_field::SIZE1, (u8) (total_size & 0xff));
 
         write_to_flash();
         return operation_result::SUCCESS;
@@ -181,9 +198,14 @@ namespace midimagic {
             write_eeprom_buffer(running_header_field_addr + 1, (u8) ((running_config_base_addr >> 16) & 0xff));
             write_eeprom_buffer(running_header_field_addr + 2, (u8) ((running_config_base_addr >> 8) & 0xff));
             write_eeprom_buffer(running_header_field_addr + 3, (u8) (running_config_base_addr & 0xff));
-            running_config_base_addr += k_fixed_portgroup_config_size + (pg_config.input_types.size()) + (pg_config.output_port_numbers.size());
+            running_config_base_addr += k_fixed_portgroup_config_size + (pg_config.input_types.size());
             running_header_field_addr += 4;
         }
+
+        // write total size
+        // running_config_base_addr points to next next cell after config which is also the size of the config
+        write_eeprom_buffer(static_header_field::SIZE0, (u8) (running_config_base_addr >> 8));
+        write_eeprom_buffer(static_header_field::SIZE1, (u8) (running_config_base_addr & 0xff));
 
         return header_size;
     }
@@ -244,15 +266,15 @@ namespace midimagic {
             write_eeprom_buffer(base_addr + v1_portgroup_config_field::TRANSPOSE, config.transpose_offset);
         }
         write_eeprom_buffer(base_addr + v1_portgroup_config_field::INPUT_TYPE_COUNT, config.input_types.size());
-        write_eeprom_buffer(base_addr + v1_portgroup_config_field::OUTPUT_PORT_COUNT, config.output_port_numbers.size());
+
+        u8 port_bitfield = 0;
+        for (auto &port_number: config.output_port_numbers) {
+            port_bitfield |= 0x80 >> port_number;
+        }
+        write_eeprom_buffer(base_addr + v1_portgroup_config_field::OUTPUT_PORTS, port_bitfield);
 
         for (auto &input_type: config.input_types) {
             write_eeprom_buffer(base_addr + configuration_size, input_type);
-            configuration_size++;
-        }
-
-        for (auto &port_number: config.output_port_numbers) {
-            write_eeprom_buffer(base_addr + configuration_size, port_number);
             configuration_size++;
         }
 
@@ -296,7 +318,14 @@ namespace midimagic {
                 }
                 new_pg.transpose_offset = transpose_offset;
                 const u8 midi_input_count = read_eeprom_buffer(base_addr + v1_portgroup_config_field::INPUT_TYPE_COUNT);
-                const u8 outport_count = read_eeprom_buffer(base_addr + v1_portgroup_config_field::OUTPUT_PORT_COUNT);
+
+                u8 outport_bitfield = read_eeprom_buffer(base_addr + v1_portgroup_config_field::OUTPUT_PORTS);
+                for (u8 outport = 0; outport < 8; outport++) {
+                    if (outport_bitfield & 0x80) {
+                        new_pg.output_port_numbers.push_back(outport);
+                    }
+                    outport_bitfield <<= 1;
+                }
 
                 for (uint32_t midi_input_field = base_addr + v1_portgroup_config_field::FIRST_VARIABLE;
                     midi_input_field < (base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count);
@@ -306,11 +335,6 @@ namespace midimagic {
                         continue;
                     }
                     new_pg.input_types.push_back(static_cast<midi_message::message_type>(read_eeprom_buffer(midi_input_field)));
-                }
-                for (uint32_t outport_field = base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count;
-                    outport_field < (base_addr + v1_portgroup_config_field::FIRST_VARIABLE + midi_input_count + outport_count);
-                    outport_field++) {
-                    new_pg.output_port_numbers.push_back(read_eeprom_buffer(outport_field));
                 }
 
                 m_system_state.system_port_groups.push_back(new_pg);

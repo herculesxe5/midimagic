@@ -46,7 +46,8 @@ namespace midimagic {
             ILLEGAL_ADDRESS_ON_WRITE,
             ILLEGAL_ADDRESS_ON_READ,
             ILLEGAL_CONFIG_BASE_ADDRESS,
-            UNKNOWN_CONFIG_TYPE_ON_READ
+            UNKNOWN_CONFIG_TYPE_ON_READ,
+            CONFIG_TOO_BIG
         };
 
         // copy external system_state into class member
@@ -59,6 +60,7 @@ namespace midimagic {
         const operation_result writeout();
 
     private:
+        #define BUFFER_SIZE 1024
         #define RUNNING_VERSION 1
         #define MAGIC 0x4d4d // "MM"
 
@@ -85,7 +87,7 @@ namespace midimagic {
             CC_NUMBER,
             TRANSPOSE,
             INPUT_TYPE_COUNT,
-            OUTPUT_PORT_COUNT,
+            OUTPUT_PORTS, // 1 byte bitfield [Port0(MSB),...,Port7(LSB)]
             FIRST_VARIABLE
         };
 

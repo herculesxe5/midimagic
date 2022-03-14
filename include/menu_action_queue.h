@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2020 Lukas Jünger                                                *
+ * Copyright 2021 Adrian Krause                                               *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -19,42 +19,30 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "ad57x4.h"
-#define REG_OUTPUT_RANGE_MASK 0x08
-#define REG_POWER_CTRL_MASK   0x10
+#ifndef MENU_ACTION_QUEUE_H
+#define MENU_ACTION_QUEUE_H
+
+#include <queue>
+#include <memory>
+#include "menu_interface.h"
+#include "common.h"
 
 namespace midimagic {
-ad57x4::ad57x4(SPIClass &spi, u8 sync) :
-    m_spi(spi),
-    m_sync(sync) {
-  m_spi.begin(m_sync);
-  // set output range +-5V
-  u8 data[3];
-  data[0] = REG_OUTPUT_RANGE_MASK | ALL_CHANNELS;
-  data[1] = 0x0;
-  data[2] = 0b11;
-  send(data);
-  // power all channels
-  data[0] = REG_POWER_CTRL_MASK;
-  data[1] = 0x0;
-  data[2] = 0x0F;
-  send(data);
-}
+    class menu_action_queue {
+    public:
+        explicit menu_action_queue(std::shared_ptr<menu_interface> mi);
+        menu_action_queue() = delete;
+        menu_action_queue(const menu_action_queue&) = delete;
+        ~menu_action_queue();
 
-ad57x4::~ad57x4() {
-    //nothing to do
-}
+        void add_menu_action(const menu_action& a);
+        void exec_next_action();
 
-void ad57x4::set_level(u16 level, u8 channel) {
-   u8 data[3];
-   data[0] = channel;
-   data[1] = (u8) (level >> 8) & 0xFF;
-   data[2] = (u8) level & 0xFF;
-   send(data);
-}
+    private:
+        std::queue<menu_action> m_action_queue;
+        std::shared_ptr<menu_interface> m_menu;
+    };
 
-void ad57x4::send(u8 (&data)[3]) {
-    m_spi.transfer(m_sync, data[0], SPI_CONTINUE);
-    m_spi.transfer16(m_sync, data[1] << 8 | data[2], SPI_LAST);
-}
 } // namespace midimagic
+
+#endif //MENU_ACTION_QUEUE_H

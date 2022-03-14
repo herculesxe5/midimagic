@@ -1,15 +1,40 @@
+/******************************************************************************
+ *                                                                            *
+ * Copyright 2021 Lukas Jünger and Adrian Krause                              *
+ *                                                                            *
+ * This program is free software: you can redistribute it and/or modify it    *
+ * under the terms of the GNU Lesser General Public License as published by   *
+ * the Free Software Foundation, either version 3 of the License,             *
+ * or (at your option) any later version.                                     *
+ *                                                                            *
+ * This program is distributed in the hope that it will be useful,            *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of             *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                       *
+ * See the GNU Lesser General Public License for more details.                *
+ *                                                                            *
+ * You should have received a copy of the GNU Lesser General Public License   *
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.      *
+ *                                                                            *
+ ******************************************************************************/
+
 #include <SPI.h>
 #include <MIDI.h>
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
 
 #include "common.h"
 #include "ad57x4.h"
 #include "midi_types.h"
 #include "output.h"
 #include "menu.h"
+#include "rotary.h"
+#include <lcdgfx.h>
+#include "bitmaps.h"
+#include "port_group.h"
+#include "inventory.h"
+#include "sys_configs.h"
 
 namespace midimagic {
+
     const u8 power_dacs = PB12;
     const u8 cs_dac0    = PA0;
     const u8 cs_dac1    = PA1;
@@ -37,50 +62,108 @@ namespace midimagic {
 
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
-    output_port port0(port0_pin, ad57x4::CHANNEL_A, dac1);
-    output_port port1(port1_pin, ad57x4::CHANNEL_B, dac1);
-    output_port port2(port2_pin, ad57x4::CHANNEL_C, dac1);
-    output_port port3(port3_pin, ad57x4::CHANNEL_D, dac1);
-    output_port port4(port4_pin, ad57x4::CHANNEL_A, dac0);
-    output_port port5(port5_pin, ad57x4::CHANNEL_B, dac0);
-    output_port port6(port6_pin, ad57x4::CHANNEL_C, dac0);
-    output_port port7(port7_pin, ad57x4::CHANNEL_D, dac0);
+    std::shared_ptr<group_dispatcher> port_master(new group_dispatcher);
+    std::shared_ptr<menu_state> menu(new menu_state);
+    std::shared_ptr<menu_action_queue> action_queue(new menu_action_queue(menu));
 
-    identic_output_demux demux0;
+    std::shared_ptr<inventory> invent(new inventory(port_master, action_queue, dac0, dac1, default_config));
 
-    TwoWire disp_i2c(PB11, PB10);
-    Adafruit_SSD1306 display(128, 64, &disp_i2c, -1);
+    rotary rot(rot_dt, rot_sw, action_queue);
 
-    menu_state menu;
+    const SPlatformI2cConfig display_config = (SPlatformI2cConfig)
+                                            { .busId = 2,
+                                              .addr = 0x3C,
+                                              .scl = disp_scl,
+                                              .sda = disp_sca,
+                                              .frequency = 0 };
+
+    DisplaySSD1306_128x64_I2C display(-1, display_config);
 };
 
 void handleNoteOn(byte midi_channel, byte midi_note, byte midi_velo) {
     using namespace midimagic;
     midi_message msg(midi_message::NOTE_ON, midi_channel, midi_note, midi_velo);
-    demux0.add_note(msg);
+    port_master->add_message(msg);
 }
 
 void handleNoteOff(byte midi_channel, byte midi_note, byte midi_velo) {
     using namespace midimagic;
     midi_message msg(midi_message::NOTE_OFF, midi_channel, midi_note, midi_velo);
-    demux0.remove_note(msg);
+    port_master->add_message(msg);
+}
+
+void handleAfterTouchPoly(byte midi_channel, byte midi_note, byte pressure) {
+    using namespace midimagic;
+    midi_message msg(midi_message::POLY_KEY_PRESSURE, midi_channel, midi_note, pressure);
+    port_master->add_message(msg);
+}
+
+void handleControlChange(byte midi_channel, byte midi_control_number, byte value) {
+    using namespace midimagic;
+    midi_message msg(midi_message::CONTROL_CHANGE, midi_channel, midi_control_number, value);
+    port_master->add_message(msg);
+}
+
+void handleProgramChange(byte midi_channel, byte midi_program_number) {
+    using namespace midimagic;
+    midi_message msg(midi_message::PROGRAM_CHANGE, midi_channel, midi_program_number, 0);
+    port_master->add_message(msg);
+}
+
+void handleAfterTouchChannel(byte midi_channel, byte pressure) {
+    using namespace midimagic;
+    midi_message msg(midi_message::CHANNEL_PRESSURE, midi_channel, pressure, 0);
+    port_master->add_message(msg);
+}
+
+void handlePitchBend(byte midi_channel, int pitch_offset) {
+    using namespace midimagic;
+    // Handle possible negative pitch offset
+    // Library expects 16-bit ints, but stm32 uses 32-bit width,
+    // so ignoring half of the bits should be ok
+    u16 mangled_offset = (u16) (pitch_offset & 0xffff);
+    if (pitch_offset < 0) {
+        // add leading 1 if negative
+        mangled_offset = mangled_offset | 0x8000;
+    }
+    // need to transport 16 bit integer
+    // midi_message.data0 holds MSB, data1 holds LSB
+    midi_message msg(midi_message::PITCH_BEND, midi_channel, (u8) (mangled_offset >> 8), (u8) (mangled_offset & 0xff));
+    port_master->add_message(msg);
+}
+
+void handleClock() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::CLOCK, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleStart() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::START, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleContinue() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::CONTINUE, 0, 0, 0);
+    port_master->add_message(msg);
+}
+
+void handleStop() {
+    using namespace midimagic;
+    midi_message msg(midi_message::message_type::STOP, 0, 0, 0);
+    port_master->add_message(msg);
 }
 
 void rot_clk_isr() {
     using namespace midimagic;
-    volatile int i = digitalRead(rot_dt);
-    volatile int j;
-    // FIXME probably needs debouncing
-    if (i == HIGH)
-        menu.notify(menu_state::ROT_LEFT);
-    if (i == LOW)
-        menu.notify(menu_state::ROT_RIGHT);
+    rot.signal_clk();
 }
 
 void rot_sw_isr() {
     using namespace midimagic;
-    // FIXME probably needs debouncing
-    menu.notify(menu_state::ROT_BUTTON);
+    rot.signal_sw();
 }
 
 void setup() {
@@ -88,41 +171,44 @@ void setup() {
     // Power up dacs
     pinMode(power_dacs, OUTPUT);
     digitalWrite(power_dacs, HIGH);
-    MIDI.setHandleNoteOn(handleNoteOn);
-    MIDI.setHandleNoteOff(handleNoteOff);
-    MIDI.begin(MIDI_CHANNEL_OMNI);
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
-    demux0.add_output(port0);
-    demux0.add_output(port1);
-    demux0.add_output(port2);
-    demux0.add_output(port3);
-    demux0.add_output(port4);
-    demux0.add_output(port5);
-    demux0.add_output(port6);
-    demux0.add_output(port7);
+    // Set up MIDI
+    MIDI.setHandleNoteOn(handleNoteOn);
+    MIDI.setHandleNoteOff(handleNoteOff);
+    MIDI.setHandleAfterTouchPoly(handleAfterTouchPoly);
+    MIDI.setHandleControlChange(handleControlChange);
+    MIDI.setHandleProgramChange(handleProgramChange);
+    MIDI.setHandleAfterTouchChannel(handleAfterTouchChannel);
+    MIDI.setHandlePitchBend(handlePitchBend);
+    MIDI.setHandleClock(handleClock);
+    MIDI.setHandleStart(handleStart);
+    MIDI.setHandleContinue(handleContinue);
+    MIDI.setHandleStop(handleStop);
+    MIDI.begin(MIDI_CHANNEL_OMNI);
+
     // Set up interrupts
     pinMode(rot_dt, INPUT_PULLUP);
     pinMode(rot_clk, INPUT_PULLUP);
     pinMode(rot_sw, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(rot_clk), rot_clk_isr, FALLING);
-    attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, FALLING);
+    attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, CHANGE);
     // Display boot screen
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0,0);
-    display.println(F("midimagic"));
-    display.setTextSize(1);
-    display.println(F("by"));
-    display.println(F("raumschiffgeraeusche"));
-    display.display();
-    auto v = std::make_shared<over_view>(menu, display);
-    menu.register_view(v);
+    display.begin();
+    display.clear();
+    display.setFixedFont(ssd1306xled_font8x16);
+    display.printFixed(0, 0, "midimagic", STYLE_BOLD);
+    display.setFixedFont(ssd1306xled_font6x8);
+    display.printFixed(0, 34, "by", STYLE_ITALIC);
+    display.printFixed(0, 42, "raumschiffgeraeusche", STYLE_ITALIC);
+    // Wait 3 sec before display refresh
+    delay(3000);
+    auto v = std::make_shared<over_view>(display, menu, invent);
+    menu->register_view(v);
 }
 
 void loop() {
     using namespace midimagic;
     MIDI.read();
+    action_queue->exec_next_action();
 }

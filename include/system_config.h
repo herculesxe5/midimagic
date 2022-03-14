@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2020 Lukas Jünger                                                *
+ * Copyright 2022 Adrian Krause                                               *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -19,42 +19,35 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "ad57x4.h"
-#define REG_OUTPUT_RANGE_MASK 0x08
-#define REG_POWER_CTRL_MASK   0x10
+#ifndef MIDIMAGIC_SYSTEM_CONFIG_H
+#define MIDIMAGIC_SYSTEM_CONFIG_H
+
+#include "common.h"
+#include "output.h"
+#include "midi_types.h"
 
 namespace midimagic {
-ad57x4::ad57x4(SPIClass &spi, u8 sync) :
-    m_spi(spi),
-    m_sync(sync) {
-  m_spi.begin(m_sync);
-  // set output range +-5V
-  u8 data[3];
-  data[0] = REG_OUTPUT_RANGE_MASK | ALL_CHANNELS;
-  data[1] = 0x0;
-  data[2] = 0b11;
-  send(data);
-  // power all channels
-  data[0] = REG_POWER_CTRL_MASK;
-  data[1] = 0x0;
-  data[2] = 0x0F;
-  send(data);
-}
 
-ad57x4::~ad57x4() {
-    //nothing to do
-}
+    struct output_port_config {
+        u8 port_number;
+        u8 clock_rate;
+        bool velocity_output;
+    };
 
-void ad57x4::set_level(u16 level, u8 channel) {
-   u8 data[3];
-   data[0] = channel;
-   data[1] = (u8) (level >> 8) & 0xFF;
-   data[2] = (u8) level & 0xFF;
-   send(data);
-}
+    struct port_group_config {
+        u8 id;
+        demux_type demux;
+        u8 midi_channel;
+        u8 cont_controller_number;
+        i8 transpose_offset;
+        std::vector<midi_message::message_type> input_types;
+        std::vector<u8> output_port_numbers;
+    };
 
-void ad57x4::send(u8 (&data)[3]) {
-    m_spi.transfer(m_sync, data[0], SPI_CONTINUE);
-    m_spi.transfer16(m_sync, data[1] << 8 | data[2], SPI_LAST);
-}
+    struct system_config {
+        std::vector<struct output_port_config> system_ports;
+        std::vector<struct port_group_config> system_port_groups;
+    };
 } // namespace midimagic
+
+#endif // MIDIMAGIC_SYSTEM_CONFIG_H

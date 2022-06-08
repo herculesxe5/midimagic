@@ -24,7 +24,7 @@
 
 #include "common.h"
 #include "system_config.h"
-#include "utility/stm32_eeprom.h"
+#include "microwire_eeprom.h"
 #include "midi_types.h"
 #include "output.h"
 
@@ -54,17 +54,23 @@ namespace midimagic {
         void readin(const struct system_config system_state);
         // return current saved system state
         const struct system_config spellout() const;
-        // load eeprom buffer from flash and deserialise into system_state struct
+        // deserialise archive into system_state struct
         const operation_result loadon();
-        // serialise system_state member into eeprom buffer and write to flash
+        // serialise system_state member into eeprom
         const operation_result writeout();
 
     private:
-        #define BUFFER_SIZE 1024
         #define RUNNING_VERSION 1
         #define MAGIC 0x4d4d // "MM"
 
-        enum static_header_field : u_int32_t {
+        // pin config and size for eeprom class
+        #define EEPROM_MOSI PB0
+        #define EEPROM_MISO PB1
+        #define EEPROM_CLK PA2
+        #define EEPROM_CS PA3
+        #define EEPROM_SIZE microwire_eeprom::eeprom_size::S16Kb
+
+        enum static_header_field : u16 {
             MAGIC0 = 0,
             MAGIC1,
             VERSION,
@@ -75,13 +81,13 @@ namespace midimagic {
             FIRST_CONFIG_BASE_ADDR
         };
 
-        enum v1_port_config_field : u_int32_t {
+        enum v1_port_config_field : u16 {
             PORT_NUMBER = 0,
             CLOCK_RATE,
             VELOCITY
         };
 
-        enum v1_portgroup_config_field : u_int32_t {
+        enum v1_portgroup_config_field : u16 {
             DEMUX_TYPE = 0,
             MIDI_CHANNEL,
             CC_NUMBER,
@@ -97,22 +103,19 @@ namespace midimagic {
         };
 
         // generate header in the eeproom buffer from system_state, return size
-        uint32_t generate_archive_header();
+        u16 generate_archive_header();
         // read header to return base address of configuration at index, return 0 on failure
-        uint32_t get_address_to(config_type type, u8 index);
+        u16 get_address_to(config_type type, u8 index);
         // serialise config struct and write to eeprom buffer, return size
-        uint32_t serialise(struct output_port_config config, uint32_t base_addr);
-        uint32_t serialise(struct port_group_config config, uint32_t base_addr);
+        u16 serialise(struct output_port_config config, u16 base_addr);
+        u16 serialise(struct port_group_config config, u16 base_addr);
         // deserialise struct of type from eeprom buffer, write to system_state
-        const operation_result deserialise(config_type type, uint32_t base_addr);
-        void write_to_flash();
-        void load_from_flash();
-        uint8_t read_eeprom_buffer(const uint32_t pos);
-        void write_eeprom_buffer(uint32_t pos, uint8_t value);
+        const operation_result deserialise(config_type type, u16 base_addr);
 
         struct system_config m_system_state;
-        const uint32_t k_port_config_size = 3;
-        const uint32_t k_fixed_portgroup_config_size = 6;
+        microwire_eeprom m_eeprom;
+        const u16 k_port_config_size = 3;
+        const u16 k_fixed_portgroup_config_size = 6;
         u8 m_running_portgroup_id;
     };
 } // namespace midimagic

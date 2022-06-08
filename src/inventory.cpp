@@ -122,16 +122,18 @@ namespace midimagic {
         }
     }
 
-    void inventory::load_config_from_flash() {
-        config_archive flash_config;
-        if (flash_config.loadon() == config_archive::operation_result::SUCCESS) {
-            apply_config(flash_config.spellout());
+    config_archive::operation_result inventory::load_config_from_eeprom() {
+        config_archive eeprom_config;
+        config_archive::operation_result load_result = eeprom_config.loadon();
+        if (load_result == config_archive::operation_result::SUCCESS) {
+            apply_config(eeprom_config.spellout());
         }
+        return load_result;
     }
 
-    void inventory::save_system_state() {
-        config_archive new_flash_config(m_system_config);
-        config_archive::operation_result return_code = new_flash_config.writeout();
+    config_archive::operation_result inventory::save_system_state() {
+        config_archive new_eeprom_config(m_system_config);
+        return new_eeprom_config.writeout();
     }
 
     void inventory::flush() {

@@ -365,10 +365,12 @@ namespace midimagic {
                            std::shared_ptr<inventory> invent)
         : menu_view(d, menu_state, invent)
         , m_menu_items{"Setup port groups",
-                       "Go to overview"}
+                       "Go to overview",
+                       "Load stored config",
+                       "Store setup"}
         , m_setup_menu_dimensions{NanoPoint{0, 0}, NanoPoint{127, 63}}
         {
-        setup_menu = std::make_unique<LcdGfxMenu>(m_menu_items, 2, m_setup_menu_dimensions);
+        setup_menu = std::make_unique<LcdGfxMenu>(m_menu_items, 4, m_setup_menu_dimensions);
     }
 
     setup_view::~setup_view() {
@@ -384,31 +386,82 @@ namespace midimagic {
                 setup_menu->show(m_display);
                 break;
             case menu_action::kind::ROT_ACTIVITY :
-                if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
-                    if (setup_menu->selection()) {
-                        auto v = std::make_shared<over_view>(m_display, m_menu_state, m_inventory);
-                        m_menu_state->register_view(v);
-                    } else if (!m_inventory->get_group_dispatcher()->get_port_groups().empty()) {
-                        auto gd = m_inventory->get_group_dispatcher();
-                        auto v = std::make_shared<portgroup_view>(m_display,
-                                                                  m_menu_state,
-                                                                  m_inventory,
-                                                                  (gd->get_port_groups()).begin());
-                        m_menu_state->register_view(v);
-                    } else {
-                        auto v = std::make_shared<add_portgroup_view>(m_display,
-                                                                      m_menu_state,
-                                                                      m_inventory);
-                        m_menu_state->register_view(v);
-                    }
-                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
-                    // nothing to do
-                } else if (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
-                    setup_menu->down();
-                    setup_menu->show(m_display);
-                } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
-                    setup_menu->up();
-                    setup_menu->show(m_display);
+                switch (a.m_subkind) {
+                    case menu_action::subkind::ROT_BUTTON :
+                        switch (setup_menu->selection()) {
+                            case 0 :
+                                if (!m_inventory->get_group_dispatcher()->get_port_groups().empty()) {
+                                    auto gd = m_inventory->get_group_dispatcher();
+                                    auto v = std::make_shared<portgroup_view>(m_display,
+                                                                              m_menu_state,
+                                                                              m_inventory,
+                                                                             (gd->get_port_groups()).begin());
+                                    m_menu_state->register_view(v);
+                                } else {
+                                    auto v = std::make_shared<add_portgroup_view>(m_display,
+                                                                                  m_menu_state,
+                                                                                  m_inventory);
+                                    m_menu_state->register_view(v);
+                                }
+                                break;
+                            case 1 :
+                                {
+                                auto v = std::make_shared<over_view>(m_display, m_menu_state, m_inventory);
+                                m_menu_state->register_view(v);
+                                break;
+                                }
+                            case 2 :
+                                {
+                                m_display.clear();
+                                auto return_code = m_inventory->load_config_from_eeprom();
+                                if (return_code == config_archive::operation_result::SUCCESS) {
+                                    m_display.printFixed(4, 8, "Config Loaded");
+                                } else {
+                                    m_display.printFixed(4, 8, "Error while loading");
+                                    m_display.printFixed(4, 24, "Error: ");
+                                    m_display.setTextCursor(46, 24);
+                                    m_display.print(return_code);
+                                }
+                                delay(3000);
+                                // refresh screen
+                                menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                                m_menu_state->notify(a);
+                                break;
+                                }
+                            case 3 :
+                                {
+                                m_display.clear();
+                                auto return_code = m_inventory->save_system_state();
+                                if (return_code == config_archive::operation_result::SUCCESS) {
+                                    m_display.printFixed(4, 8, "Setup Saved");
+                                } else {
+                                    m_display.printFixed(4, 8, "Error while saving");
+                                    m_display.printFixed(4, 24, "Error: ");
+                                    m_display.setTextCursor(46, 24);
+                                    m_display.print(return_code);
+                                }
+                                delay(3000);
+                                // refresh screen
+                                menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                                m_menu_state->notify(a);
+                                break;
+                                }
+                            default :
+                                // nothing to do
+                                break;
+                        }
+                        break;
+                    case menu_action::subkind::ROT_RIGHT :
+                        setup_menu->down();
+                        setup_menu->show(m_display);
+                        break;
+                    case menu_action::subkind::ROT_LEFT :
+                        setup_menu->up();
+                        setup_menu->show(m_display);
+                        break;
+                    default :
+                        // nothing to do
+                        break;
                 }
                 break;
             default :
@@ -1516,7 +1569,7 @@ namespace midimagic {
                         // Trigger display update
                         menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
                         m_menu_state->notify(a);
-                    }
+                    } // FIXME switch back to setup menu if control == 0
                 }
                 break;
             default:

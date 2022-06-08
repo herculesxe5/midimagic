@@ -130,7 +130,7 @@ namespace midimagic {
         virtual void notify(const menu_action &a) override;
 
     private:
-        const char *m_menu_items[2];
+        const char *m_menu_items[4];
         const NanoRect m_setup_menu_dimensions;
         std::unique_ptr<LcdGfxMenu> setup_menu;
     };

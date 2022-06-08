@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2022 Lukas Jünger and Adrian Krause                              *
  *                                                                            *
  * This program is free software: you can redistribute it and/or modify it    *
  * under the terms of the GNU Lesser General Public License as published by   *
@@ -66,13 +66,13 @@ namespace midimagic {
     std::shared_ptr<menu_state> menu(new menu_state);
     std::shared_ptr<menu_action_queue> action_queue(new menu_action_queue(menu));
 
-    std::shared_ptr<inventory> invent(new inventory(port_master, action_queue, dac0, dac1, default_config));
+    std::shared_ptr<inventory> invent(new inventory(port_master, action_queue, dac0, dac1));
 
     rotary rot(rot_dt, rot_sw, action_queue);
 
     const SPlatformI2cConfig display_config = (SPlatformI2cConfig)
                                             { .busId = 2,
-                                              .addr = 0x3C,
+                                              .addr = 0x3D,
                                               .scl = disp_scl,
                                               .sda = disp_sca,
                                               .frequency = 0 };
@@ -203,6 +203,18 @@ void setup() {
     display.printFixed(0, 42, "raumschiffgeraeusche", STYLE_ITALIC);
     // Wait 3 sec before display refresh
     delay(3000);
+
+    // Try to load config from flash
+    auto return_code = invent->load_config_from_eeprom();
+    if (return_code != config_archive::operation_result::SUCCESS) {
+        display.clear();
+        display.printFixed(0, 8, "Config load error:");
+        display.setTextCursor(114, 8);
+        display.print(return_code);
+        delay(3000);
+    }
+
+    // Show menu
     auto v = std::make_shared<over_view>(display, menu, invent);
     menu->register_view(v);
 }

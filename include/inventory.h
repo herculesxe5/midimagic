@@ -65,8 +65,8 @@ namespace midimagic {
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         std::shared_ptr<menu_action_queue> get_menu_queue();
         void apply_config(const struct system_config& new_config); // setup system as in new_config
-        void load_config_from_flash();
-        void save_system_state();
+        config_archive::operation_result load_config_from_eeprom();
+        config_archive::operation_result save_system_state();
 
     private:
         std::shared_ptr<group_dispatcher> m_group_dispatcher;

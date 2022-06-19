@@ -92,10 +92,10 @@ namespace midimagic {
     }
 
     void inventory::apply_config(const struct system_config& new_config) {
-        //FIXME check config for sane values
+
         flush();
-        //overwrite old system_config with new_config
-        m_system_config = new_config;
+        // overwrite old system_config with new_config
+        m_system_config = sanitise_config(new_config);
         // setup output ports
         std::shared_ptr<output_port> system_port;
         for (auto &port_config: m_system_config.system_ports) {
@@ -278,16 +278,24 @@ namespace midimagic {
         // check for unique output port numbers and numbers in range (0...7)
         for (auto it = in_config.system_ports.begin(); it != in_config.system_ports.end(); ) {
             if (it->port_number > 7) {
+                // ignore this output port
                 ++it;
                 continue;
             }
+
+            bool duplicate_port = false;
+
             for (auto next_it = std::next(it, 1); next_it != in_config.system_ports.end(); ) {
                 // if a following output port config has the same port number ignore current
                 if (next_it->port_number == it->port_number) {
-                    ++it;
+                    duplicate_port = true;
                     break;
                 }
                 ++next_it;
+            }
+            if (duplicate_port) {
+                ++it;
+                continue;
             }
             // all good, copy config into out struct and move on
             out_config.system_ports.emplace_back(*it);
@@ -323,25 +331,6 @@ namespace midimagic {
             // cc value must be in range of (0...127)
             if (it->cont_controller_number > 127) {
                 out_config.system_port_groups.back().cont_controller_number = 127;
-            }
-            // each output port number in output_port_numbers vector must be in range (0...7)
-            // and have corresponding output port config
-            for (auto outport_it = it->output_port_numbers.begin(); outport_it != it->output_port_numbers.end(); ) {
-                if ((*outport_it) > 7) {
-                    // find element in out_config and erase
-                    for (auto outconfig_portnumber_it = out_config.system_port_groups.back().output_port_numbers.begin();
-                    outconfig_portnumber_it != out_config.system_port_groups.back().output_port_numbers.end(); ) {
-                        if ((*outconfig_portnumber_it) == (*outport_it)) {
-                            out_config.system_port_groups.back().output_port_numbers.erase(outconfig_portnumber_it);
-                            break;
-                        }
-                        ++outconfig_portnumber_it;
-                    }
-                    ++outport_it;
-                    continue;
-                }
-                //FIXME add config exists check
-                ++outport_it;
             }
 
             ++it;

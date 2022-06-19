@@ -1569,7 +1569,11 @@ namespace midimagic {
                         // Trigger display update
                         menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
                         m_menu_state->notify(a);
-                    } // FIXME switch back to setup menu if control == 0
+                    } else {
+                        // Switch to setup_view
+                        auto v = std::make_shared<setup_view>(m_display, m_menu_state, m_inventory);
+                        m_menu_state->register_view(v);
+                    }
                 }
                 break;
             default:

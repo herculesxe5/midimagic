@@ -280,7 +280,7 @@ namespace midimagic {
     }
 
     const config_archive::operation_result config_archive::deserialise(config_type type, u16 base_addr) {
-        if (base_addr < 6) { //FIXME 6 ?????????
+        if (base_addr < static_header_field::FIRST_CONFIG_BASE_ADDR + 2) {
             // illegal address, no configs exist in this case, nope out and
             // return bad address failure
             return operation_result::ILLEGAL_ADDRESS_ON_READ;

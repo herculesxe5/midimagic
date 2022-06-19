@@ -80,7 +80,7 @@ namespace midimagic {
         // vvv these functions alter the system setup vvv
         // creates output_port in m_system_ports
         void spawn_port(const u8 config_port_number);
-        // create new port group as per id in system_config, returns new id
+        // create new port group from system_config, returns new id
         const u8 spawn_port_group(std::vector<struct port_group_config>::iterator config_pg_it);
 
         // vvv these functions update system_config vvv

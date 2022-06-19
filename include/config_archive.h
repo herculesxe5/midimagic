@@ -102,14 +102,14 @@ namespace midimagic {
             PORTGROUP_CONFIG
         };
 
-        // generate header in the eeproom buffer from system_state, return size
+        // generate header in the eeproom from system_state, return size
         u16 generate_archive_header();
         // read header to return base address of configuration at index, return 0 on failure
         u16 get_address_to(config_type type, u8 index);
-        // serialise config struct and write to eeprom buffer, return size
+        // serialise config struct and write to eeprom, return size
         u16 serialise(struct output_port_config config, u16 base_addr);
         u16 serialise(struct port_group_config config, u16 base_addr);
-        // deserialise struct of type from eeprom buffer, write to system_state
+        // deserialise struct of type from eeprom, write to system_state
         const operation_result deserialise(config_type type, u16 base_addr);
 
         struct system_config m_system_state;

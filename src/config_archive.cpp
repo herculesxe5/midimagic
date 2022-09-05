@@ -131,8 +131,8 @@ namespace midimagic {
         u16 predicted_size = ((u16) m_eeprom.read(static_header_field::SIZE0)) << 8;
         predicted_size += m_eeprom.read(static_header_field::SIZE1);
         if (predicted_size > EEPROM_SIZE) {
-            return operation_result::CONFIG_TOO_BIG;
             m_eeprom.disable_write();
+            return operation_result::CONFIG_TOO_BIG;
         }
 
         u16 return_config_size;
@@ -203,7 +203,7 @@ namespace midimagic {
         }
 
         // write total size
-        // running_config_base_addr points to next next cell after config which is also the size of the config
+        // running_config_base_addr points to the next free cell after the last config which is also the size of the whole archive
         m_eeprom.write(static_header_field::SIZE0, (u8) (running_config_base_addr >> 8));
         m_eeprom.write(static_header_field::SIZE1, (u8) (running_config_base_addr & 0xff));
 

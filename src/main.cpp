@@ -193,7 +193,10 @@ void setup() {
     pinMode(rot_sw, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(rot_clk), rot_clk_isr, FALLING);
     attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, CHANGE);
+
     // Display boot screen
+    // Add delay, some displays need more setup time
+    delay(500);
     display.begin();
     display.clear();
     display.setFixedFont(ssd1306xled_font8x16);

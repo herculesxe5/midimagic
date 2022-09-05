@@ -68,6 +68,7 @@ namespace midimagic {
     protected:
         const u8 m_port_number;
         std::shared_ptr<output_port> m_port;
+        void parse_draw_clock_rate(const u8 clock_rate, const u8 x, const u8 y) const;
 
     private:
         const char *m_menu_items[3];

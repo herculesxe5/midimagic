@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2022 Lukas Jünger and Adrian Krause                              *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -77,30 +77,16 @@ namespace midimagic {
                 m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
+
                 if (m_port->get_velocity_switch()) {
                     m_display.printFixed(0, 8, "Output: Velocity", STYLE_NORMAL);
                 } else {
                     m_display.printFixed(0, 8, "Output: Note", STYLE_NORMAL);
                 }
-                switch (m_port->get_clock_rate()) {
-                    case 12 :
-                        m_display.printFixed(0, 16, "Clock Rate: 1/8");
-                        break;
-                    case 24 :
-                        m_display.printFixed(0, 16, "Clock Rate: 1/4");
-                        break;
-                    case 48 :
-                        m_display.printFixed(0, 16, "Clock Rate: 1/2");
-                        break;
-                    case 96 :
-                        m_display.printFixed(0, 16, "Clock Rate: 1");
-                        break;
-                    default :
-                        m_display.printFixed(0, 16, "Clock Rate:");
-                        m_display.setTextCursor(72, 16);
-                        m_display.print(m_port->get_clock_rate());
-                        break;
-                }
+
+                m_display.printFixed(0, 16, "Clock Rate:");
+                parse_draw_clock_rate(m_port->get_clock_rate(), 72, 16);
+
                 m_port_menu->show(m_display);
                 break;
             case menu_action::kind::ROT_ACTIVITY :
@@ -148,6 +134,31 @@ namespace midimagic {
         }
     }
 
+    void port_view::parse_draw_clock_rate(const u8 clock_rate, const u8 x, const u8 y) const {
+        switch (clock_rate) {
+            case 6 :
+                m_display.printFixed(x, y, "1/16 Note");
+                break;
+            case 12 :
+                m_display.printFixed(x, y, "1/8 Note");
+                break;
+            case 24 :
+                m_display.printFixed(x, y, "1/4 Note");
+                break;
+            case 48 :
+                m_display.printFixed(x, y, "1/2 Note");
+                break;
+            case 96 :
+                m_display.printFixed(x, y, "1 Note");
+                break;
+            default :
+                m_display.setTextCursor(x, y);
+                m_display.print(clock_rate);
+                m_display.printFixed(x + 32, y, "timing Clocks");
+                break;
+        }
+    }
+
     config_port_clock_view::config_port_clock_view(u8 port_number,
                                                    DisplaySSD1306_128x64_I2C &d,
                                                    std::shared_ptr<menu_state> menu_state,
@@ -169,26 +180,8 @@ namespace midimagic {
                 m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
-                m_display.printFixed(0, 8, "Set Port Clock Rate:", STYLE_NORMAL);
-                switch (m_clock_rate) {
-                    case 12 :
-                        m_display.printFixed(0, 16, "1/8 Note");
-                        break;
-                    case 24 :
-                        m_display.printFixed(0, 16, "1/4 Note");
-                        break;
-                    case 48 :
-                        m_display.printFixed(0, 16, "1/2 Note");
-                        break;
-                    case 96 :
-                        m_display.printFixed(0, 16, "1 Note");
-                        break;
-                    default :
-                        m_display.setTextCursor(0, 16);
-                        m_display.print(m_clock_rate);
-                        m_display.printFixed(32, 16, "timing Clocks");
-                        break;
-                }
+                m_display.printFixed(0, 8, "Set Clock Rate:", STYLE_NORMAL);
+                parse_draw_clock_rate(m_clock_rate, 0, 16);
                 break;
             case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_RIGHT) {

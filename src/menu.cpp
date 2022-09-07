@@ -121,10 +121,14 @@ namespace midimagic {
                 if (a.m_data0 == m_port_number) {
                     if        (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
                         m_display.printFixed(100, 0, "*", STYLE_NORMAL);
-                        m_display.setTextCursor(108, 0);
+                        m_display.setTextCursor(120, 0);
                         m_display.print(a.m_data1);
+                    } else if (a.m_subkind == menu_action::subkind::PORT_ACTIVE_CC) {
+                        m_display.printFixed(100, 0, "CC", STYLE_NORMAL);
+                    } else if (a.m_subkind == menu_action::subkind::PORT_ACTIVE_CLK) {
+                        m_display.printFixed(100, 0, "CLK", STYLE_NORMAL);
                     } else if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
-                        m_display.printFixed(100, 0, " ", STYLE_NORMAL);
+                        m_display.printFixed(100, 0, "   ", STYLE_NORMAL);
                     }
                 }
                 break;
@@ -251,11 +255,13 @@ namespace midimagic {
                 draw_pin_select();
                 break;
             case menu_action::kind::PORT_ACTIVITY :
-                if        (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
-                    draw_activity(a.m_data0, a.m_data1);
-                } else if (a.m_subkind == menu_action::subkind::PORT_NACTIVE) {
+                if     (a.m_subkind != menu_action::subkind::PORT_NACTIVE) {
+                    draw_activity(a.m_subkind, a.m_data0, a.m_data1);
+                } else {
                     draw_inactivity(a.m_data0);
                 }
+                // Save port status for next activity invocation
+                m_last_port_statuses[a.m_data0] = a.m_subkind;
                 break;
             case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
@@ -320,9 +326,15 @@ namespace midimagic {
         }
     }
 
-    void over_view::draw_activity(const int port_number, const int port_value) const {
+    void over_view::draw_activity(const menu_action::subkind activity_type, const int port_number, const int port_value) const {
         int xoffset;
         int yoffset;
+
+        if ((m_last_port_statuses[port_number] == activity_type)
+            && (activity_type != menu_action::subkind::PORT_ACTIVE)) {
+            // nothing to do, leave display as is
+            return;
+        }
 
         // calculate offsets
         if (port_number < 4) {
@@ -333,19 +345,34 @@ namespace midimagic {
             yoffset = m_activity_yoffset + m_rowoffset;
         }
 
-        m_display.setFixedFont(ssd1306xled_font5x7);
-        // draw activity dot
-        m_display.printFixed(xoffset+m_activitydot_xoffset, yoffset, "*", STYLE_NORMAL);
+        switch (activity_type) {
+            case menu_action::subkind::PORT_ACTIVE :
+                // draw activity dot
+                m_display.printFixed(xoffset+m_activitydot_xoffset, yoffset, "*", STYLE_NORMAL);
 
-        // draw port value
-        m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "   ", STYLE_NORMAL);
-        m_display.setTextCursor(xoffset+m_port_value_xoffset, yoffset);
-        m_display.print(port_value);
+                // draw port value
+                m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "   ", STYLE_NORMAL);
+                m_display.setTextCursor(xoffset+m_port_value_xoffset, yoffset);
+                m_display.print(port_value);
+                break;
+            case menu_action::subkind::PORT_ACTIVE_CC :
+                m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "   ", STYLE_NORMAL);
+                m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "CC", STYLE_NORMAL);
+                break;
+            case menu_action::subkind::PORT_ACTIVE_CLK :
+                m_display.printFixed(xoffset+m_activitydot_xoffset, yoffset, "*", STYLE_NORMAL);
+                m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "   ", STYLE_NORMAL);
+                m_display.printFixed(xoffset+m_port_value_xoffset, yoffset, "CLK", STYLE_NORMAL);
+                break;
+            default :
+                // nothing to do
+                break;
+        }
     }
 
     void over_view::draw_inactivity(const int port_number) const {
         m_display.setFixedFont(ssd1306xled_font5x7);
-        // draw black rectangle over activity dot
+        // draw space over activity dot
         if (port_number < 4) {
             m_display.printFixed(port_number*32+m_activitydot_xoffset, m_activity_yoffset, " ", STYLE_NORMAL);
         } else {

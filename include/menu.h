@@ -104,6 +104,7 @@ namespace midimagic {
 
     private:
         u8 m_pin_select;
+        menu_action::subkind m_last_port_statuses[8];
 
         // Pixel offsets for pin selection and activity
         const uint8_t m_rowoffset;
@@ -116,7 +117,7 @@ namespace midimagic {
         void draw_statics() const;
         void draw_pin_select() const;
         void draw_pin_deselect() const;
-        void draw_activity(const int port_number, const int port_value) const;
+        void draw_activity(const menu_action::subkind activity_type, const int port_number, const int port_value) const;
         void draw_inactivity(const int port_number) const;
     };
 

@@ -99,6 +99,7 @@ namespace midimagic {
                 if (cc_value < 64) {
                     digital_pin_control = LOW;
                 }
+                port_status = menu_action::subkind::PORT_ACTIVE_CC;
                 break;
             case midi_message::message_type::CHANNEL_PRESSURE :
                 // output unipolar representation of the value
@@ -135,6 +136,7 @@ namespace midimagic {
                 // lower pin after duty cycle of 5 clocks,
                 // reset clock_count when at value of clock_rate
                 inhibit_dac_update = true;
+                port_status = menu_action::subkind::PORT_ACTIVE_CLK;
                 m_clock_count++;
                 if (m_clock_count >= m_clock_rate) {
                     m_clock_count = 0;

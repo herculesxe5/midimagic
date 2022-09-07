@@ -36,6 +36,8 @@ namespace midimagic {
             ROT_BUTTON,
             ROT_BUTTON_LONGPRESS,
             PORT_ACTIVE,
+            PORT_ACTIVE_CC,
+            PORT_ACTIVE_CLK,
             PORT_NACTIVE,
         };
         explicit menu_action(kind k, subkind sk, int d0 = 0, int d1 = 0);

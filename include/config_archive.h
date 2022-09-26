@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "system_config.h"
+#include "hardware_config.h"
 #include "microwire_eeprom.h"
 #include "midi_types.h"
 #include "output.h"
@@ -62,13 +63,6 @@ namespace midimagic {
     private:
         #define RUNNING_VERSION 1
         #define MAGIC 0x4d4d // "MM"
-
-        // pin config and size for eeprom class
-        #define EEPROM_MOSI PB0
-        #define EEPROM_MISO PB1
-        #define EEPROM_CLK PA2
-        #define EEPROM_CS PA3
-        #define EEPROM_SIZE microwire_eeprom::eeprom_size::S16Kb
 
         enum static_header_field : u16 {
             MAGIC0 = 0,

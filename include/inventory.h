@@ -33,17 +33,6 @@
 namespace midimagic {
     class inventory {
     public:
-        const u8 port_number2digital_pin[8] {
-            PB9, // port0
-            PB8, // port1
-            PB7, // port2
-            PB6, // port3
-            PB5, // port4
-            PB4, // port5
-            PB3, // port6
-            PA15 // port7
-        };
-
         inventory(std::shared_ptr<group_dispatcher> gd,
                   std::shared_ptr<menu_action_queue> menu_q,
                   ad57x4 &dac0,
@@ -67,6 +56,17 @@ namespace midimagic {
         void apply_config(const struct system_config& new_config); // setup system as in new_config
         config_archive::operation_result load_config_from_eeprom();
         config_archive::operation_result save_system_state();
+
+        const u8 port_number2digital_pin[8] {
+            hw_setup.ports.dpin_port0,
+            hw_setup.ports.dpin_port1,
+            hw_setup.ports.dpin_port2,
+            hw_setup.ports.dpin_port3,
+            hw_setup.ports.dpin_port4,
+            hw_setup.ports.dpin_port5,
+            hw_setup.ports.dpin_port6,
+            hw_setup.ports.dpin_port7
+        };
 
     private:
         std::shared_ptr<group_dispatcher> m_group_dispatcher;

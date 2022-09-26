@@ -23,13 +23,13 @@
 
 namespace midimagic {
     config_archive::config_archive()
-        : m_eeprom(EEPROM_MOSI, EEPROM_MISO, EEPROM_CLK, EEPROM_CS, EEPROM_SIZE)
+        : m_eeprom(hw_setup.eeprom.mosi, hw_setup.eeprom.miso, hw_setup.eeprom.clk, hw_setup.eeprom.cs, hw_setup.eeprom.size)
         , m_running_portgroup_id(0) {
         // nothing to do
     }
 
     config_archive::config_archive(const struct system_config system_state)
-        : m_eeprom(EEPROM_MOSI, EEPROM_MISO, EEPROM_CLK, EEPROM_CS, EEPROM_SIZE)
+        : m_eeprom(hw_setup.eeprom.mosi, hw_setup.eeprom.miso, hw_setup.eeprom.clk, hw_setup.eeprom.cs, hw_setup.eeprom.size)
         , m_running_portgroup_id(0) {
         readin(system_state);
     }
@@ -65,7 +65,7 @@ namespace midimagic {
         if (total_size < static_header_field::FIRST_CONFIG_BASE_ADDR) {
             return operation_result::ARCHIVE_EMPTY;
         }
-        if (total_size > EEPROM_SIZE) {
+        if (total_size > hw_setup.eeprom.size) {
             return operation_result::SIZE_MISMATCH;
         }
 
@@ -130,7 +130,7 @@ namespace midimagic {
         // check if config fits
         u16 predicted_size = ((u16) m_eeprom.read(static_header_field::SIZE0)) << 8;
         predicted_size += m_eeprom.read(static_header_field::SIZE1);
-        if (predicted_size > EEPROM_SIZE) {
+        if (predicted_size > hw_setup.eeprom.size) {
             m_eeprom.disable_write();
             return operation_result::CONFIG_TOO_BIG;
         }

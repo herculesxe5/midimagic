@@ -22,6 +22,7 @@
 #include <Wire.h>
 
 #include "common.h"
+#include "hardware_config.h"
 #include "ad57x4.h"
 #include "midi_types.h"
 #include "output.h"
@@ -31,10 +32,11 @@
 #include "bitmaps.h"
 #include "port_group.h"
 #include "inventory.h"
-#include "sys_configs.h"
+//#include "sys_configs.h"
 
 namespace midimagic {
 
+/*
     const u8 power_dacs = PB12;
     const u8 cs_dac0    = PA0;
     const u8 cs_dac1    = PA1;
@@ -54,11 +56,12 @@ namespace midimagic {
     const u8 port5_pin  = PB4;
     const u8 port6_pin  = PB3;
     const u8 port7_pin  = PA15;
+    */
 
-    SPIClass spi1(mosi_dac, miso_dac, clk_dac);
+    SPIClass spi1(hw_setup.dac.mosi, hw_setup.dac.miso, hw_setup.dac.clk);
 
-    ad57x4 dac0(spi1, cs_dac0);
-    ad57x4 dac1(spi1, cs_dac1);
+    ad57x4 dac0(spi1, hw_setup.dac.cs0);
+    ad57x4 dac1(spi1, hw_setup.dac.cs1);
 
     midi::MidiInterface<HardwareSerial> MIDI((HardwareSerial&)Serial1);
 
@@ -68,13 +71,13 @@ namespace midimagic {
 
     std::shared_ptr<inventory> invent(new inventory(port_master, action_queue, dac0, dac1));
 
-    rotary rot(rot_dt, rot_sw, action_queue);
+    rotary rot(hw_setup.rotary.dat, hw_setup.rotary.swi, action_queue);
 
     const SPlatformI2cConfig display_config = (SPlatformI2cConfig)
                                             { .busId = 2,
-                                              .addr = 0x3D,
-                                              .scl = disp_scl,
-                                              .sda = disp_sca,
+                                              .addr = hw_setup.display.addr,
+                                              .scl = hw_setup.display.sclk,
+                                              .sda = hw_setup.display.sdat,
                                               .frequency = 0 };
 
     DisplaySSD1306_128x64_I2C display(-1, display_config);
@@ -169,8 +172,8 @@ void rot_sw_isr() {
 void setup() {
     using namespace midimagic;
     // Power up dacs
-    pinMode(power_dacs, OUTPUT);
-    digitalWrite(power_dacs, HIGH);
+    pinMode(hw_setup.dac.power, OUTPUT);
+    digitalWrite(hw_setup.dac.power, HIGH);
     dac0.set_level(0, ad57x4::ALL_CHANNELS);
     dac1.set_level(0, ad57x4::ALL_CHANNELS);
     // Set up MIDI
@@ -188,11 +191,11 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
 
     // Set up interrupts
-    pinMode(rot_dt, INPUT_PULLUP);
-    pinMode(rot_clk, INPUT_PULLUP);
-    pinMode(rot_sw, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(rot_clk), rot_clk_isr, FALLING);
-    attachInterrupt(digitalPinToInterrupt(rot_sw), rot_sw_isr, CHANGE);
+    pinMode(hw_setup.rotary.dat, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.clk), rot_clk_isr, FALLING);
+    attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.swi), rot_sw_isr, CHANGE);
 
     // Display boot screen
     // Add delay, some displays need more setup time
@@ -207,7 +210,7 @@ void setup() {
     // Wait 3 sec before display refresh
     delay(3000);
 
-    // Try to load config from flash
+    // Try to load config from eeprom
     auto return_code = invent->load_config_from_eeprom();
     if (return_code != config_archive::operation_result::SUCCESS) {
         display.clear();

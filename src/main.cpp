@@ -171,6 +171,8 @@ void rot_sw_isr() {
 
 void setup() {
     using namespace midimagic;
+    // Add delay to leave setup time for the display and DACs
+    delay(500);
     // Power up dacs
     pinMode(hw_setup.dac.power, OUTPUT);
     digitalWrite(hw_setup.dac.power, HIGH);
@@ -198,8 +200,6 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.swi), rot_sw_isr, CHANGE);
 
     // Display boot screen
-    // Add delay, some displays need more setup time
-    delay(500);
     display.begin();
     display.clear();
     display.setFixedFont(ssd1306xled_font8x16);

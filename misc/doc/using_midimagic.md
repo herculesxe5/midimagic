@@ -53,11 +53,11 @@ Every message on all ports
 The first free/inactive port is picked,
 if all ports are currently assigned/active the "oldest"/longest active one is chosen.
 
-This is usefull for playing polyphonicaly with multiple oscillators for example.
+This is usefull for playing polyphonically with multiple oscillators for example.
 
 ----
 ### On the Matter of Ports
-Each port consists of a variable voltage and a gate/trigger output. The variable/control voltage (analog) output has a range of +-5V and is used for continuous voltage such as pitch CV. The gate/trigger is a digital (low/high) output to indicate a change (trigger) of the continuous CV value output or gate representing a pressed key for example. Available voltages levels are either 0V or 10V.
+Each port consists of a variable voltage and a gate/trigger output. The variable/control voltage (analog) output has a range of +/-5V and is used for continuous voltage such as pitch CV. The gate/trigger is a digital (low/high) output to indicate a change (trigger) of the continuous CV value output or gate representing a pressed key for example. Available voltages levels are either 0V or 10V.
 The 2 outputs are used diffently depending on the type of received message.
 
 The different MIDI message types are interpreted as follows:
@@ -67,7 +67,7 @@ The different MIDI message types are interpreted as follows:
 | Note Off | 0x09 | unchanged | Low voltage |
 | Polyphonic Key Pressure/Aftertouch | 0xA | Raw value scaled to ~2.5V | unchanged |
 | Control Change | 0xB | Raw value | Low if value is less than 64, else High (as per MIDI spec) |
-| Program Change | 0xC | Ingored * | |
+| Program Change | 0xC | Ignored * | |
 | Channel Pressure/Monophonic Aftertouch | 0xD | Raw value scaled to ~2.5V | unchanged |
 | Pitch Bend | 0xE | Raw value scaled to 2 halftones (as per MIDI spec), but is added to the current value if port is active | unchanged |
 | Clock | 0xF8 | unchanged | Rate adjustable trigger with 5 clock ticks duty cycle |
@@ -79,8 +79,9 @@ The different MIDI message types are interpreted as follows:
 ----
 ## Using Midimagic in your Patch
 
-----
 ### Examples
+Here are a few suggestions of how to setup and work with Midimagic. Feel free to adapt and enhance these in your setup. All ports and MIDI channels noted are only exemplary and can be changed for your needs.
+
 A simple monophonic setup
 ```
 ----------------------------     ----------------------------     ---------------------------
@@ -106,12 +107,18 @@ Combine Note messages from different MIDI channels to the same ports with Pitch 
 ----------------------------     ----------------------------     ---------------------------
 | Note On                  |====>| Portgroup 1    | Demuxer =====>| Port 1                  |
 | Note Off                 |     | Channel 1      | FIFO    |     | Port 2                  |
-| Pitch Bend               |     |                ----------|     | Port 3                  |
+|                          |     |                ----------|     | Port 3                  |
 |                          |     |                          |     |                         |
 ----------------------------     ----------------------------     ---------------------------
 ----------------------------     ----------------------------     ---------------------------
 | Note On                  |====>| Portgroup 2    | Demuxer =====>| Port 1                  |
 | Note Off                 |     | Channel 5      | FIFO    |     | Port 2                  |
+|                          |     |                ----------|     | Port 3                  |
+|                          |     |                          |     |                         |
+----------------------------     ----------------------------     ---------------------------
+----------------------------     ----------------------------     ---------------------------
+| Pitch Bend               |====>| Portgroup 3    | Demuxer =====>| Port 1                  |
+|                          |     | Channel 1      | Identic |     | Port 2                  |
 |                          |     |                ----------|     | Port 3                  |
 |                          |     |                          |     |                         |
 ----------------------------     ----------------------------     ---------------------------
@@ -188,7 +195,7 @@ Distribute Notes randomly but have Pitch Bend on all ports
 ----------------------------     ----------------------------     ---------------------------
 ```
 
-Pitch CV and Clock as ADSR trigger on the same port
+Pitch CV and Clock as ADSR trigger on the same port (clock retriggers the notes like an arppegiator)
 ```
 ----------------------------     ----------------------------     ---------------------------
 | Note On                  |====>| Portgroup 1    | Demuxer =====>| Port 5                  |

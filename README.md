@@ -10,7 +10,7 @@ The (non-exhaustive) feature list includes:
 - MIDI message auto-learn
 - Transposing of notes
 - Hardware MIDI thru output
-- Saving and recalling of the setup (Work in progress)
+- Saving and recalling of the setup
 
 Midimagic is still under development so features, behavior or hardware may change.
 

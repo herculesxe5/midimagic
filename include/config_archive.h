@@ -96,7 +96,7 @@ namespace midimagic {
             PORTGROUP_CONFIG
         };
 
-        // generate header in the eeproom from system_state, return size
+        // generate header in the eeprom from system_state, return size
         u16 generate_archive_header();
         // read header to return base address of configuration at index, return 0 on failure
         u16 get_address_to(config_type type, u8 index);

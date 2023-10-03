@@ -32,7 +32,6 @@
 #include "bitmaps.h"
 #include "port_group.h"
 #include "inventory.h"
-//#include "sys_configs.h"
 
 namespace midimagic {
 

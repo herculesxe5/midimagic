@@ -35,28 +35,6 @@
 
 namespace midimagic {
 
-/*
-    const u8 power_dacs = PB12;
-    const u8 cs_dac0    = PA0;
-    const u8 cs_dac1    = PA1;
-    const u8 mosi_dac   = PA7;
-    const u8 miso_dac   = PA6;
-    const u8 clk_dac    = PA5;
-    const u8 rot_sw     = PB15;
-    const u8 rot_clk    = PB14;
-    const u8 rot_dt     = PB13;
-    const u8 disp_scl   = PB10;
-    const u8 disp_sca   = PB11;
-    const u8 port0_pin  = PB9;
-    const u8 port1_pin  = PB8;
-    const u8 port2_pin  = PB7;
-    const u8 port3_pin  = PB6;
-    const u8 port4_pin  = PB5;
-    const u8 port5_pin  = PB4;
-    const u8 port6_pin  = PB3;
-    const u8 port7_pin  = PA15;
-    */
-
     SPIClass spi1(hw_setup.dac.mosi, hw_setup.dac.miso, hw_setup.dac.clk);
 
     ad57x4 dac0(spi1, hw_setup.dac.cs0);

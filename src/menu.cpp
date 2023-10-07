@@ -201,7 +201,8 @@ namespace midimagic {
                 } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
                     if (m_clock_rate % 12) {
                         m_clock_rate = 12;
-                    } else if (m_clock_rate > 6) {
+                    }
+                    if (m_clock_rate > 6) {
                         m_clock_rate = m_clock_rate / 2;
                     }
                     // trigger display update

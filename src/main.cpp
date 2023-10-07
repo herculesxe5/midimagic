@@ -148,7 +148,12 @@ void rot_sw_isr() {
 
 void setup() {
     using namespace midimagic;
-    // Add delay to leave setup time for the display and DACs
+    // Prepare interrupt pins
+    pinMode(hw_setup.rotary.dat, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
+
+    // Add delay to leave setup and settling time for the display, DACs and interrupt pins
     delay(500);
     // Power up dacs
     pinMode(hw_setup.dac.power, OUTPUT);
@@ -170,9 +175,6 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
 
     // Set up interrupts
-    pinMode(hw_setup.rotary.dat, INPUT_PULLUP);
-    pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
-    pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.clk), rot_clk_isr, FALLING);
     attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.swi), rot_sw_isr, CHANGE);
 

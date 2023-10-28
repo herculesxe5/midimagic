@@ -153,13 +153,15 @@ void setup() {
     pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
     pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
 
+    // Setup DAC power pin
+    pinMode(hw_setup.dac.power, OUTPUT);
+
     // Add delay to leave setup and settling time for the display, DACs and interrupt pins
     delay(500);
+
     // Power up dacs
-    pinMode(hw_setup.dac.power, OUTPUT);
     digitalWrite(hw_setup.dac.power, HIGH);
-    dac0.set_level(0, ad57x4::ALL_CHANNELS);
-    dac1.set_level(0, ad57x4::ALL_CHANNELS);
+
     // Set up MIDI
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
@@ -188,6 +190,10 @@ void setup() {
     display.printFixed(0, 42, "raumschiffgeraeusche", STYLE_ITALIC);
     // Wait 3 sec before display refresh
     delay(3000);
+
+    //Set DACs to 0V
+    dac0.set_level(0, ad57x4::ALL_CHANNELS);
+    dac1.set_level(0, ad57x4::ALL_CHANNELS);
 
     // Try to load config from eeprom
     auto return_code = invent->load_config_from_eeprom();

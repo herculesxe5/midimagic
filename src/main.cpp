@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2022,2023 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This program is free software: you can redistribute it and/or modify it    *
  * under the terms of the GNU Lesser General Public License as published by   *

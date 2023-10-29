@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2022,2023 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This program is free software: you can redistribute it and/or modify it    *
  * under the terms of the GNU Lesser General Public License as published by   *
@@ -32,31 +32,8 @@
 #include "bitmaps.h"
 #include "port_group.h"
 #include "inventory.h"
-//#include "sys_configs.h"
 
 namespace midimagic {
-
-/*
-    const u8 power_dacs = PB12;
-    const u8 cs_dac0    = PA0;
-    const u8 cs_dac1    = PA1;
-    const u8 mosi_dac   = PA7;
-    const u8 miso_dac   = PA6;
-    const u8 clk_dac    = PA5;
-    const u8 rot_sw     = PB15;
-    const u8 rot_clk    = PB14;
-    const u8 rot_dt     = PB13;
-    const u8 disp_scl   = PB10;
-    const u8 disp_sca   = PB11;
-    const u8 port0_pin  = PB9;
-    const u8 port1_pin  = PB8;
-    const u8 port2_pin  = PB7;
-    const u8 port3_pin  = PB6;
-    const u8 port4_pin  = PB5;
-    const u8 port5_pin  = PB4;
-    const u8 port6_pin  = PB3;
-    const u8 port7_pin  = PA15;
-    */
 
     SPIClass spi1(hw_setup.dac.mosi, hw_setup.dac.miso, hw_setup.dac.clk);
 
@@ -171,13 +148,20 @@ void rot_sw_isr() {
 
 void setup() {
     using namespace midimagic;
-    // Add delay to leave setup time for the display and DACs
-    delay(500);
-    // Power up dacs
+    // Prepare interrupt pins
+    pinMode(hw_setup.rotary.dat, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
+    pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
+
+    // Setup DAC power pin
     pinMode(hw_setup.dac.power, OUTPUT);
+
+    // Add delay to leave setup and settling time for the display, DACs and interrupt pins
+    delay(500);
+
+    // Power up dacs
     digitalWrite(hw_setup.dac.power, HIGH);
-    dac0.set_level(0, ad57x4::ALL_CHANNELS);
-    dac1.set_level(0, ad57x4::ALL_CHANNELS);
+
     // Set up MIDI
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
@@ -193,9 +177,6 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
 
     // Set up interrupts
-    pinMode(hw_setup.rotary.dat, INPUT_PULLUP);
-    pinMode(hw_setup.rotary.clk, INPUT_PULLUP);
-    pinMode(hw_setup.rotary.swi, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.clk), rot_clk_isr, FALLING);
     attachInterrupt(digitalPinToInterrupt(hw_setup.rotary.swi), rot_sw_isr, CHANGE);
 
@@ -209,6 +190,10 @@ void setup() {
     display.printFixed(0, 42, "raumschiffgeraeusche", STYLE_ITALIC);
     // Wait 3 sec before display refresh
     delay(3000);
+
+    //Set DACs to 0V
+    dac0.set_level(0, ad57x4::ALL_CHANNELS);
+    dac1.set_level(0, ad57x4::ALL_CHANNELS);
 
     // Try to load config from eeprom
     auto return_code = invent->load_config_from_eeprom();

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2021-2023 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -133,14 +133,14 @@ namespace midimagic {
                 break;
             case midi_message::message_type::CLOCK :
                 // raise digital pin on clock_count 1,
-                // lower pin after duty cycle of 5 clocks,
+                // lower pin after duty cycle of 4 clocks,
                 // reset clock_count when at value of clock_rate
                 inhibit_dac_update = true;
                 port_status = menu_action::subkind::PORT_ACTIVE_CLK;
                 m_clock_count++;
                 if (m_clock_count >= m_clock_rate) {
                     m_clock_count = 0;
-                } else if (m_clock_count == 6) {
+                } else if (m_clock_count == 5) {
                     digital_pin_control = LOW;
                     port_status = menu_action::subkind::PORT_NACTIVE;
                 } else if (m_clock_count == 1) {

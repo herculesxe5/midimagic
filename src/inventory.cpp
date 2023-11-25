@@ -132,7 +132,9 @@ namespace midimagic {
     }
 
     config_archive::operation_result inventory::save_system_state() {
-        config_archive new_eeprom_config(m_system_config);
+        auto system_state = gather_system_state();
+        config_archive new_eeprom_config(*system_state);
+        //config_archive new_eeprom_config(m_system_config);
         return new_eeprom_config.writeout();
     }
 
@@ -144,7 +146,41 @@ namespace midimagic {
         m_system_config.system_port_groups.clear();
     }
 
+    std::unique_ptr<const struct system_config> inventory::gather_system_state() const {
+        struct system_config current_state;
 
+        // generate output_port_configs
+        for (auto& port: m_system_ports) {
+            const struct output_port_config current_port = {port->get_port_number(), port->get_clock_rate(), port->get_velocity_switch()};
+            current_state.system_ports.push_back(std::move(current_port));
+        }
+
+        // generate port_group_configs
+        auto& port_groups = m_group_dispatcher->get_port_groups();
+        for (auto& port_group: port_groups) {
+            struct port_group_config current_pg = {
+            port_group->get_id(),
+            port_group->get_demux().get_type(),
+            port_group->get_midi_channel(),
+            port_group->get_cc(),
+            port_group->get_transpose()
+            };
+
+            // the message input types vector can just be copied
+            current_pg.input_types.reserve(port_group->get_msg_types().size());
+            std::copy(port_group->get_msg_types().begin(), port_group->get_msg_types().end(), std::back_inserter(current_pg.input_types));
+
+            // the output_port ids must be read out of the objects directly
+            auto& ports_vector = port_group->get_demux().get_output();
+            for (auto& port: ports_vector) {
+                current_pg.output_port_numbers.push_back(port->get_port_number());
+            }
+
+            current_state.system_port_groups.push_back(std::move(current_pg));
+        }
+
+        return std::make_unique<const struct system_config>(current_state);
+    }
 
     void inventory::spawn_port(const u8 config_port_number) {
         ad57x4::dac_channel dac_ch;

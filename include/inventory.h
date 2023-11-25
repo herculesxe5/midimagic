@@ -49,10 +49,12 @@ namespace midimagic {
         void submit_portgroup_change(const u8 system_pg_id); // inform inventory about port group config change, updates system_config
         void submit_portgroup_delete(const u8 system_pg_id); // inform inventory about deleted port group, updates system config
         void submit_portgroup_add(const u8 system_pg_id); // inform inventory about new port group, updates system config
-        std::shared_ptr<output_port> get_output_port(const u8 port_number); // returns pointer to output_port by port number, creates object if needed
         void submit_output_port_change(const u8 system_port_number); // inform inventory about output_port change, updates system config
+
+        std::shared_ptr<output_port> get_output_port(const u8 port_number); // returns pointer to output_port by port number, creates object if needed
         std::shared_ptr<group_dispatcher> get_group_dispatcher(); // returns pointer to the system port group dispatcher
         std::shared_ptr<menu_action_queue> get_menu_queue();
+
         void apply_config(const struct system_config& new_config); // setup system as in new_config
         config_archive::operation_result load_config_from_eeprom();
         config_archive::operation_result save_system_state();
@@ -76,6 +78,7 @@ namespace midimagic {
         std::vector<std::shared_ptr<output_port>> m_system_ports;
 
         void flush(); // destroys all port groups and deletes from system_config
+        std::unique_ptr<const struct system_config> gather_system_state() const;
 
         // vvv these functions alter the system setup vvv
         // creates output_port in m_system_ports

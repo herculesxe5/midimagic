@@ -101,7 +101,7 @@ namespace midimagic {
         const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it_by_id(const u8 system_pg_id) const;
         const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it_by_number(const u8 system_port_number) const;
         const bool port_exists(const u8 port_number) const;
-        const struct system_config sanitise_config(const struct system_config in_config);
+        const struct system_config sanitise_config(const struct system_config in_config) const;
     };
 } // namespace midimagic
 #endif // MIDIMAGIC_INVENTORY_H

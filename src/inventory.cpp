@@ -308,7 +308,7 @@ namespace midimagic {
         return false;
     }
 
-    const struct system_config inventory::sanitise_config(const struct system_config in_config) {
+    const struct system_config inventory::sanitise_config(const struct system_config in_config) const {
         // FIXME add flag if change happend
         struct system_config out_config;
         // check for unique output port numbers and numbers in range (0...7)

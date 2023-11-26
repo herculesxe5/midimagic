@@ -49,18 +49,6 @@ namespace midimagic {
         // nothing to do
     }
 
-    void inventory::submit_portgroup_change(const u8 system_pg_id) {
-        rescan_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
-    void inventory::submit_portgroup_delete(const u8 system_pg_id) {
-        forget_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
-    void inventory::submit_portgroup_add(const u8 system_pg_id) {
-        add_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
     std::shared_ptr<output_port> inventory::get_output_port(const u8 port_number) {
         for (auto &port: m_system_ports) {
             if (port->get_port_number() == port_number) {
@@ -75,12 +63,6 @@ namespace midimagic {
         new_port_config.velocity_output = new_port->get_velocity_switch();
         m_system_config.system_ports.push_back(new_port_config);
         return new_port;
-    }
-
-    void inventory::submit_output_port_change(const u8 system_port_number) {
-        if (port_exists(system_port_number)) {
-            rescan_output_port(system_port_it_by_number(system_port_number));
-        }
     }
 
     std::shared_ptr<group_dispatcher> inventory::get_group_dispatcher() {
@@ -114,11 +96,6 @@ namespace midimagic {
         // setup port groups
         for (auto &pg_config: m_system_config.system_port_groups) {
             u8 new_pg_id = spawn_port_group(config_pg_it_by_id(pg_config.id));
-        }
-        // iterate through the created system port groups and update ids in system_config
-        auto& system_portgroups = m_group_dispatcher->get_port_groups();
-        for (u8 i = 0; i < system_portgroups.size(); i++) {
-            m_system_config.system_port_groups.at(i).id = system_portgroups.at(i)->get_id();
         }
     }
 
@@ -223,39 +200,6 @@ namespace midimagic {
             }
         }
         return new_pg->get_id();
-    }
-
-    void inventory::rescan_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        auto config_pg_it = config_pg_it_by_id((*system_pg_it)->get_id());
-        config_pg_it->demux = ((*system_pg_it)->get_demux()).get_type();
-        config_pg_it->midi_channel = (*system_pg_it)->get_midi_channel();
-        config_pg_it->cont_controller_number = (*system_pg_it)->get_cc();
-        config_pg_it->transpose_offset = (*system_pg_it)->get_transpose();
-        config_pg_it->input_types.clear();
-        for (auto &system_pg_input: (*system_pg_it)->get_msg_types()) {
-            config_pg_it->input_types.push_back(system_pg_input);
-        }
-        config_pg_it->output_port_numbers.clear();
-        for (auto &system_pg_port: ((*system_pg_it)->get_demux()).get_output()) {
-            config_pg_it->output_port_numbers.push_back(system_pg_port->get_port_number());
-        }
-    }
-
-    void inventory::add_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        struct port_group_config new_pg_config;
-        new_pg_config.id = (*system_pg_it)->get_id();
-        m_system_config.system_port_groups.push_back(new_pg_config);
-        rescan_port_group(system_pg_it);
-    }
-
-    void inventory::forget_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        m_system_config.system_port_groups.erase(config_pg_it_by_id((*system_pg_it)->get_id()));
-    }
-
-    void inventory::rescan_output_port(const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it) {
-        auto port_config = config_port_it_by_number((*system_port_it)->get_port_number());
-        port_config->clock_rate = (*system_port_it)->get_clock_rate();
-        port_config->velocity_output = (*system_port_it)->get_velocity_switch();
     }
 
     std::vector<struct port_group_config>::iterator inventory::config_pg_it_by_id(u8 config_pg_id) {

@@ -128,19 +128,23 @@ namespace midimagic {
 
         // generate output_port_configs
         for (auto& port: m_system_ports) {
-            const struct output_port_config current_port = {port->get_port_number(), port->get_clock_rate(), port->get_velocity_switch()};
+            const struct output_port_config current_port {
+                .port_number {port->get_port_number()},
+                .clock_rate {port->get_clock_rate()},
+                .velocity_output {port->get_velocity_switch()}
+            };
             current_state.system_ports.push_back(std::move(current_port));
         }
 
         // generate port_group_configs
         auto& port_groups = m_group_dispatcher->get_port_groups();
         for (auto& port_group: port_groups) {
-            struct port_group_config current_pg = {
-            port_group->get_id(),
-            port_group->get_demux().get_type(),
-            port_group->get_midi_channel(),
-            port_group->get_cc(),
-            port_group->get_transpose()
+            struct port_group_config current_pg {
+            .id {port_group->get_id()},
+            .demux {port_group->get_demux().get_type()},
+            .midi_channel {port_group->get_midi_channel()},
+            .cont_controller_number {port_group->get_cc()},
+            .transpose_offset {port_group->get_transpose()}
             };
 
             // the message input types vector can just be copied

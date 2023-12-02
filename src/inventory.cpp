@@ -56,13 +56,7 @@ namespace midimagic {
             }
         }
         spawn_port(port_number);
-        auto new_port = m_system_ports.back();
-        struct output_port_config new_port_config;
-        new_port_config.port_number = port_number;
-        new_port_config.clock_rate = new_port->get_clock_rate();
-        new_port_config.velocity_output = new_port->get_velocity_switch();
-        m_system_config.system_ports.push_back(new_port_config);
-        return new_port;
+        return m_system_ports.back();
     }
 
     std::shared_ptr<group_dispatcher> inventory::get_group_dispatcher() {
@@ -81,13 +75,7 @@ namespace midimagic {
         // setup output ports
         std::shared_ptr<output_port> system_port;
         for (auto &port_config: m_system_config.system_ports) {
-            if (port_exists(port_config.port_number)) {
-                system_port = get_output_port(port_config.port_number);
-            } else {
-                // dont use get_output_port if port is non-existent to avoid overwriting the new config values
-                spawn_port(port_config.port_number);
-                system_port = m_system_ports.back();
-            }
+            system_port = get_output_port(port_config.port_number);
             system_port->set_clock_rate(port_config.clock_rate);
             if (system_port->get_velocity_switch() != port_config.velocity_output) {
                 system_port->set_velocity_switch();

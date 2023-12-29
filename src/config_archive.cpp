@@ -142,12 +142,12 @@ namespace midimagic {
             if (next_address) {
                 return_config_size = serialise(m_system_state.system_ports.at(index), next_address);
             } else {
-                return operation_result::ILLEGAL_ADDRESS_ON_WRITE;
                 m_eeprom.disable_write();
+                return operation_result::ILLEGAL_ADDRESS_ON_WRITE;
             }
             if (!return_config_size) {
-                return operation_result::ILLEGAL_CONFIG_BASE_ADDRESS;
                 m_eeprom.disable_write();
+                return operation_result::ILLEGAL_CONFIG_BASE_ADDRESS;
             }
         }
 
@@ -156,12 +156,12 @@ namespace midimagic {
             if (next_address) {
                 return_config_size = serialise(m_system_state.system_port_groups.at(index), next_address);
             } else {
-                return operation_result::ILLEGAL_ADDRESS_ON_WRITE;
                 m_eeprom.disable_write();
+                return operation_result::ILLEGAL_ADDRESS_ON_WRITE;
             }
             if (!return_config_size) {
-                return operation_result::ILLEGAL_CONFIG_BASE_ADDRESS;
                 m_eeprom.disable_write();
+                return operation_result::ILLEGAL_CONFIG_BASE_ADDRESS;
             }
         }
         m_eeprom.disable_write();

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022,2023 Adrian Krause                                          *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *

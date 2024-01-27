@@ -15,26 +15,26 @@ The menu is structured as follows:
 ```
                                         -------------
                     --------------------| Main Menu |----------------
-                    V                   -------------               V
-    ------------------------------                          -------------------           ---------------------
-    | Overview                   |                          | Portgroup setup |---------->| Add new portgroup |
-    | (Default view on power-on) |                          -------------------           ---------------------
-    ------------------------------                            |             |
-                    |                                         |             |
-                    |                                         V             V
-                    V                   ---------------------------     ------------------------------
-    ----------------------              | Change input properties |     | Change output properties   |
-    | Port view (1 to 8) |              | of selected portgroup   |     | of selected portgroup      |
-    ----------------------              | (Set MIDI channel,      |     | (Set demuxer, Add/remove   |
-                    |                   | Add/remove MIDI input,  |     | output port, Set transpose |
-                    |                   | Set controller)         |     | offset)                    |
-                    V                   ---------------------------     ------------------------------
-    --------------------------                          |                     |
-    | Change port properties |                          |                     |
-    | (Pitch/Velocity mode,  |                          V                     V
-    | Clock Rate)            |          -----------------------         -----------------------
-    --------------------------          | Value entry subview |         | Value entry subview |
-                    |                   -----------------------         -----------------------
+                    V                   -------------   |           V
+    ------------------------------                      V         -------------------      ---------------------
+    | Overview                   |             --------------     | Portgroup setup |----->| Add new portgroup |
+    | (Default view on power-on) |             | Load/Store |     -------------------      ---------------------
+    ------------------------------             |   Setup    |       |             |
+                    |                          --------------       |             |
+                    |                                               V             V
+                    V                         ---------------------------     ------------------------------
+    ----------------------                    | Change input properties |     | Change output properties   |
+    | Port view (1 to 8) |                    | of selected portgroup   |     | of selected portgroup      |
+    ----------------------                    | (Set MIDI channel,      |     | (Set demuxer, Add/remove   |
+                    |                         | Add/remove MIDI input,  |     | output port, Set transpose |
+                    |                         | Set controller)         |     | offset)                    |
+                    V                         ---------------------------     ------------------------------
+    --------------------------                                |                     |
+    | Change port properties |                                |                     |
+    | (Pitch/Velocity mode,  |                                V                     V
+    | Clock Rate)            |                -----------------------         -----------------------
+    --------------------------                | Value entry subview |         | Value entry subview |
+                    |                         -----------------------         -----------------------
                     |
                     V
     -----------------------
@@ -94,3 +94,35 @@ The assigned ports with their number.
 
 ***Transpose:***
 From the output properties menu a transpose offset can be set. A positive or negative amount of halftones added to all incoming note on/off messages which the assigned output ports will produce.
+
+----
+
+## Loading and Storing the setup
+The whole system setup can be stored in the EERPOM at any time from the main menu. Loading the previously stored state is also possible and will override all portgroups as well as all port and portgroup properties.
+This happens at every power-on too so that you can continue from the point where you last saved before powering off the system.
+
+If it is desired that midimagic comes up in a pristine state (read: with no configured portgroups and standard port properties) at every power-up you'll have to delete all portgroups, set the port settings as desired and then store this state from the main menu.
+
+**Quirks and notable phenomena:**
+
+- If the EEPROM has never been written with a config there will also be no config header to read for the software when loading from the EEPROM (at the first power-on after installing the EEPROM especially). Midimagic will throw the error code `1` in this case (see below). This is expected and does not mean that there is a malfunction.
+
+- If you are getting error code `1` persistently at every power-on or manual load even if you know you saved a config before, this typically means there is a communication problem between the microcontroller and the EEPROM. Check the wiring for continuity and shorts between the pins.
+
+- If midimagic gets stuck with an empty screen while storing the config this also hints to a communication problem. Resetting the microcontroller via the push-button on the bluepill board or via power-cycling the system is your only option then. Check the wiring for continuity and shorts between the pins.
+
+### Error codes while Loading and Storing
+
+| Error Code | Meaning | Remarks |
+| ---------- | ------- | ------- |
+| 0 | Success | Normally not shown |
+| 1 | No config header found | Unwritten/empty EEPROM or no data received from the EEPROM |
+| 2 | Config format version unknown | Currently there is only 1 format so if you see this the EEPROM is defective or you are getting wrong data |
+| 3 | Config size mismatch | The size is not matching the value in the header or bigger than the EEPROM size |
+| 4 | Archive empty | Header contains no port or portgroup configuration, not necessarily a fault |
+| 5 | Corrupt header | Malformed header structure or other inconsistent data |
+| 6 | Illegal address on write | The system configuration to be written is inconsistent, should only occur if there is a software bug |
+| 7 | Illegal address on read | Configuration pointer in the header points to impossible location, should only occur if there is a software bug or corrupt data in the EEPROM |
+| 8 | Illegal config base address | Base-address of a specific configuration object is unreasonable, should only occur if there is a software bug |
+| 9 | Unknown config type on read | Wrong usage of the deserialise function, should only occur if there is a software bug |
+| 10 | Config too big | The EEPROM can't hold the whole configuration |

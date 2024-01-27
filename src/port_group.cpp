@@ -181,11 +181,9 @@ namespace midimagic {
     }
 
     const bool port_group::has_msg_type(const midi_message::message_type msg_type) const {
-        for (auto it = m_input_types.begin(); it != m_input_types.end(); ) {
-            if (*it == msg_type) {
+        for (auto& input_type: m_input_types) {
+            if (input_type == msg_type) {
                 return true;
-            } else {
-                ++it;
             }
         }
         return false;

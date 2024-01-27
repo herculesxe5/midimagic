@@ -93,8 +93,6 @@ namespace midimagic {
                 if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     if (m_port_menu->selection() == 0) {
                             m_port->set_velocity_switch();
-                            // inform inventory about change
-                            m_inventory->submit_output_port_change(m_port_number);
                             // trigger display update
                             menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
                             m_menu_state->notify(a);
@@ -211,8 +209,6 @@ namespace midimagic {
 
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port->set_clock_rate(m_clock_rate);
-                    // inform inventory about change
-                    m_inventory->submit_output_port_change(m_port_number);
                     // switch back to port_view
                     auto v = std::make_shared<port_view>(m_port_number, m_display, m_menu_state, m_inventory);
                     m_menu_state->register_view(v);
@@ -798,8 +794,6 @@ namespace midimagic {
                         auto gd = m_inventory->get_group_dispatcher();
                         auto pg_id = m_port_group.get_id();
                         gd->remove_port_group(pg_id);
-                        // inform inventory about change
-                        m_inventory->submit_portgroup_delete(pg_id);
                         // Switch to portgroup_view
                         // check if there is at least 1 port group left
                         if (!gd->get_port_groups().empty()) {
@@ -892,8 +886,6 @@ namespace midimagic {
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.set_midi_channel(m_channel);
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -951,8 +943,6 @@ namespace midimagic {
                     m_menu_state->notify(a);
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.set_demux(m_demux);
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1025,8 +1015,6 @@ namespace midimagic {
                     } else if (m_message_menu->selection() == 7) {
                         m_port_group.add_midi_input(midi_message::message_type::CLOCK);
                     }
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1096,8 +1084,6 @@ namespace midimagic {
                     m_menu_state->notify(a);
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.set_cc(m_cc_number);
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1191,8 +1177,6 @@ namespace midimagic {
                         if (m_capture_msg.type == midi_message::message_type::CONTROL_CHANGE) {
                             m_port_group.set_cc(m_capture_msg.data0);
                         }
-                        // inform inventory about change
-                        m_inventory->submit_portgroup_change(m_port_group.get_id());
                         // Switch back to portgroup_view
                         auto v = std::make_shared<portgroup_view>(m_display,
                                                                   m_menu_state,
@@ -1283,8 +1267,6 @@ namespace midimagic {
                     break;
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.remove_msg_type(m_msg_types.at(m_message_menu->selection()));
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1349,8 +1331,6 @@ namespace midimagic {
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     auto out_port = m_inventory->get_output_port(m_port_number-1);
                     m_port_group.add_port(out_port);
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1418,8 +1398,6 @@ namespace midimagic {
                     }
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.remove_port(m_port_numbers.at(m_port_selection));
-                    // inform inventory about change
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1479,7 +1457,6 @@ namespace midimagic {
                     m_menu_state->notify(a);
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     m_port_group.set_transpose(m_transpose_offset);
-                    m_inventory->submit_portgroup_change(m_port_group.get_id());
                     // Switch back to portgroup_view
                     auto v = std::make_shared<portgroup_view>(m_display,
                                                               m_menu_state,
@@ -1576,8 +1553,6 @@ namespace midimagic {
                         // create new port group and display it
                         m_group_dispatcher.add_port_group(m_demux, m_channel);
                         auto new_pg_it = std::prev(m_group_dispatcher.get_port_groups().end());
-                        // inform inventory about change
-                        m_inventory->submit_portgroup_add((*new_pg_it)->get_id());
                         auto v = std::make_shared<portgroup_view>(m_display,
                                                                   m_menu_state,
                                                                   m_inventory,

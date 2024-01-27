@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022-2024 Adrian Krause                                          *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -49,18 +49,6 @@ namespace midimagic {
         // nothing to do
     }
 
-    void inventory::submit_portgroup_change(const u8 system_pg_id) {
-        rescan_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
-    void inventory::submit_portgroup_delete(const u8 system_pg_id) {
-        forget_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
-    void inventory::submit_portgroup_add(const u8 system_pg_id) {
-        add_port_group(system_pg_it_by_id(system_pg_id));
-    }
-
     std::shared_ptr<output_port> inventory::get_output_port(const u8 port_number) {
         for (auto &port: m_system_ports) {
             if (port->get_port_number() == port_number) {
@@ -68,19 +56,7 @@ namespace midimagic {
             }
         }
         spawn_port(port_number);
-        auto new_port = m_system_ports.back();
-        struct output_port_config new_port_config;
-        new_port_config.port_number = port_number;
-        new_port_config.clock_rate = new_port->get_clock_rate();
-        new_port_config.velocity_output = new_port->get_velocity_switch();
-        m_system_config.system_ports.push_back(new_port_config);
-        return new_port;
-    }
-
-    void inventory::submit_output_port_change(const u8 system_port_number) {
-        if (port_exists(system_port_number)) {
-            rescan_output_port(system_port_it_by_number(system_port_number));
-        }
+        return m_system_ports.back();
     }
 
     std::shared_ptr<group_dispatcher> inventory::get_group_dispatcher() {
@@ -99,13 +75,7 @@ namespace midimagic {
         // setup output ports
         std::shared_ptr<output_port> system_port;
         for (auto &port_config: m_system_config.system_ports) {
-            if (port_exists(port_config.port_number)) {
-                system_port = get_output_port(port_config.port_number);
-            } else {
-                // dont use get_output_port if port is non-existent to avoid overwriting the new config values
-                spawn_port(port_config.port_number);
-                system_port = m_system_ports.back();
-            }
+            system_port = get_output_port(port_config.port_number);
             system_port->set_clock_rate(port_config.clock_rate);
             if (system_port->get_velocity_switch() != port_config.velocity_output) {
                 system_port->set_velocity_switch();
@@ -114,11 +84,6 @@ namespace midimagic {
         // setup port groups
         for (auto &pg_config: m_system_config.system_port_groups) {
             u8 new_pg_id = spawn_port_group(config_pg_it_by_id(pg_config.id));
-        }
-        // iterate through the created system port groups and update ids in system_config
-        auto& system_portgroups = m_group_dispatcher->get_port_groups();
-        for (u8 i = 0; i < system_portgroups.size(); i++) {
-            m_system_config.system_port_groups.at(i).id = system_portgroups.at(i)->get_id();
         }
     }
 
@@ -132,7 +97,8 @@ namespace midimagic {
     }
 
     config_archive::operation_result inventory::save_system_state() {
-        config_archive new_eeprom_config(m_system_config);
+        auto system_state = gather_system_state();
+        config_archive new_eeprom_config(*system_state);
         return new_eeprom_config.writeout();
     }
 
@@ -144,7 +110,45 @@ namespace midimagic {
         m_system_config.system_port_groups.clear();
     }
 
+    std::unique_ptr<const struct system_config> inventory::gather_system_state() const {
+        struct system_config current_state;
 
+        // generate output_port_configs
+        for (auto& port: m_system_ports) {
+            const struct output_port_config current_port {
+                .port_number {port->get_port_number()},
+                .clock_rate {port->get_clock_rate()},
+                .velocity_output {port->get_velocity_switch()}
+            };
+            current_state.system_ports.push_back(std::move(current_port));
+        }
+
+        // generate port_group_configs
+        auto& port_groups = m_group_dispatcher->get_port_groups();
+        for (auto& port_group: port_groups) {
+            struct port_group_config current_pg {
+            .id {port_group->get_id()},
+            .demux {port_group->get_demux().get_type()},
+            .midi_channel {port_group->get_midi_channel()},
+            .cont_controller_number {port_group->get_cc()},
+            .transpose_offset {port_group->get_transpose()}
+            };
+
+            // the message input types vector can just be copied
+            current_pg.input_types.reserve(port_group->get_msg_types().size());
+            std::copy(port_group->get_msg_types().begin(), port_group->get_msg_types().end(), std::back_inserter(current_pg.input_types));
+
+            // the output_port ids must be read out of the objects directly
+            auto& ports_vector = port_group->get_demux().get_output();
+            for (auto& port: ports_vector) {
+                current_pg.output_port_numbers.push_back(port->get_port_number());
+            }
+
+            current_state.system_port_groups.push_back(std::move(current_pg));
+        }
+
+        return std::make_unique<const struct system_config>(current_state);
+    }
 
     void inventory::spawn_port(const u8 config_port_number) {
         ad57x4::dac_channel dac_ch;
@@ -187,39 +191,6 @@ namespace midimagic {
             }
         }
         return new_pg->get_id();
-    }
-
-    void inventory::rescan_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        auto config_pg_it = config_pg_it_by_id((*system_pg_it)->get_id());
-        config_pg_it->demux = ((*system_pg_it)->get_demux()).get_type();
-        config_pg_it->midi_channel = (*system_pg_it)->get_midi_channel();
-        config_pg_it->cont_controller_number = (*system_pg_it)->get_cc();
-        config_pg_it->transpose_offset = (*system_pg_it)->get_transpose();
-        config_pg_it->input_types.clear();
-        for (auto &system_pg_input: (*system_pg_it)->get_msg_types()) {
-            config_pg_it->input_types.push_back(system_pg_input);
-        }
-        config_pg_it->output_port_numbers.clear();
-        for (auto &system_pg_port: ((*system_pg_it)->get_demux()).get_output()) {
-            config_pg_it->output_port_numbers.push_back(system_pg_port->get_port_number());
-        }
-    }
-
-    void inventory::add_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        struct port_group_config new_pg_config;
-        new_pg_config.id = (*system_pg_it)->get_id();
-        m_system_config.system_port_groups.push_back(new_pg_config);
-        rescan_port_group(system_pg_it);
-    }
-
-    void inventory::forget_port_group(const std::vector<std::unique_ptr<port_group>>::const_iterator system_pg_it) {
-        m_system_config.system_port_groups.erase(config_pg_it_by_id((*system_pg_it)->get_id()));
-    }
-
-    void inventory::rescan_output_port(const std::vector<std::shared_ptr<output_port>>::const_iterator system_port_it) {
-        auto port_config = config_port_it_by_number((*system_port_it)->get_port_number());
-        port_config->clock_rate = (*system_port_it)->get_clock_rate();
-        port_config->velocity_output = (*system_port_it)->get_velocity_switch();
     }
 
     std::vector<struct port_group_config>::iterator inventory::config_pg_it_by_id(u8 config_pg_id) {
@@ -272,7 +243,7 @@ namespace midimagic {
         return false;
     }
 
-    const struct system_config inventory::sanitise_config(const struct system_config in_config) {
+    const struct system_config inventory::sanitise_config(const struct system_config in_config) const {
         // FIXME add flag if change happend
         struct system_config out_config;
         // check for unique output port numbers and numbers in range (0...7)

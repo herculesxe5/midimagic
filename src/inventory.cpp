@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022-2024 Adrian Krause                                          *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -99,7 +99,6 @@ namespace midimagic {
     config_archive::operation_result inventory::save_system_state() {
         auto system_state = gather_system_state();
         config_archive new_eeprom_config(*system_state);
-        //config_archive new_eeprom_config(m_system_config);
         return new_eeprom_config.writeout();
     }
 

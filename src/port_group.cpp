@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022,2024 Adrian Krause                                          *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -89,6 +89,8 @@ namespace midimagic {
                     case midi_message::message_type::START :
                         // just slide through
                     case midi_message::message_type::CONTINUE :
+                        // just slide through
+                    case midi_message::message_type::STOP :
                         // just slide through
                     case midi_message::message_type::CLOCK :
                         if (port_group->has_msg_type(midi_message::message_type::CLOCK)) {

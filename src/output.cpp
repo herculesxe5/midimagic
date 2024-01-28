@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021-2023 Lukas Jünger and Adrian Krause                         *
+ * Copyright 2021-2024 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -53,6 +53,7 @@ namespace midimagic {
         , m_clock_count(0)
         , m_clock_rate(24)
         , m_output_velocity(false)
+        , m_clock_mode(clock_mode::SYNC)
         , m_menu(menu)
         , m_port_number(port_number) {
         pinMode(m_digital_pin, OUTPUT);
@@ -122,14 +123,39 @@ namespace midimagic {
                     steps = PB_offset << 2;
                 }
                 break;
-            case midi_message::message_type::START :
-                // just slide through
-            case midi_message::message_type::CONTINUE :
-                // reset clock_count on receipt of START or CONTINUE to resync on the next clock
-                m_clock_count = 0;
+            case midi_message::message_type::STOP :
                 inhibit_dac_update = true;
-                digital_pin_control = LOW;
-                port_status = menu_action::subkind::PORT_NACTIVE;
+                if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_STOP) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                } else {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                }
+                break;
+            case midi_message::message_type::START :
+                inhibit_dac_update = true;
+                if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_START) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                    break;
+                } else if (m_clock_mode > clock_mode::SIGNAL_GATE) {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                    break;
+                }
+                // continue to next case for other clock modes
+            case midi_message::message_type::CONTINUE :
+                inhibit_dac_update = true;
+                if (m_clock_mode == clock_mode::SYNC) {
+                    // reset clock_count on receipt of START or CONTINUE to resync on the next clock
+                    m_clock_count = 0;
+                    digital_pin_control = LOW;
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                } else if ((m_clock_mode == clock_mode::SIGNAL_GATE) || (m_clock_mode == clock_mode::SIGNAL_TRIGGER_CONT)) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                } else {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                }
                 break;
             case midi_message::message_type::CLOCK :
                 // raise digital pin on clock_count 1,
@@ -210,6 +236,14 @@ namespace midimagic {
 
     const bool output_port::get_velocity_switch() const {
         return m_output_velocity;
+    }
+
+    void output_port::set_clock_mode(clock_mode cm) {
+        m_clock_mode = cm;
+    }
+
+    const output_port::clock_mode output_port::get_clock_mode() const {
+        return m_clock_mode;
     }
 
     output_demux::output_demux(const demux_type type)

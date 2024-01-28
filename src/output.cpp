@@ -124,6 +124,9 @@ namespace midimagic {
                 }
                 break;
             case midi_message::message_type::STOP :
+                // If we are set to trigger mode with 'stop' turn port "on".
+                // Turn port "off" for all other modes
+                // Break flow everytime
                 inhibit_dac_update = true;
                 if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_STOP) {
                     port_status = menu_action::subkind::PORT_ACTIVE_CLK;
@@ -133,6 +136,9 @@ namespace midimagic {
                 }
                 break;
             case midi_message::message_type::START :
+                // If we get START messsage in TRIGGER_START mode turn port "on" and break execution.
+                // If mode is not SYNC or GATE turn port "off" and break execution.
+                // In SYNC or GATE mode continue to next case.
                 inhibit_dac_update = true;
                 if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_START) {
                     port_status = menu_action::subkind::PORT_ACTIVE_CLK;
@@ -144,6 +150,10 @@ namespace midimagic {
                 }
                 // continue to next case for other clock modes
             case midi_message::message_type::CONTINUE :
+                // Here we can stumble upon all CONTINUE messages and if in GATE mode START messages will arrive here too.
+                // In SYNC mode reset the port state for either message.
+                // In GATE or continue-trigger mode turn port "on".
+                // Turn port off for all other modes (i.e. the other trigger modes).
                 inhibit_dac_update = true;
                 if (m_clock_mode == clock_mode::SYNC) {
                     // reset clock_count on receipt of START or CONTINUE to resync on the next clock

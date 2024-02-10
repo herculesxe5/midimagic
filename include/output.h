@@ -57,6 +57,10 @@ namespace midimagic {
             SIGNAL_TRIGGER_STOP
         };
 
+        friend clock_mode& operator++(clock_mode& cm);
+        friend clock_mode& operator--(clock_mode& cm);
+
+
         bool is_active();
         bool is_note(midi_message &msg);
         void set_note(midi_message &note_on_msg);

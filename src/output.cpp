@@ -44,6 +44,14 @@ namespace midimagic {
         return demux_type_names[type];
     }
 
+    output_port::clock_mode& operator++(output_port::clock_mode& cm) {
+        return cm = (cm == output_port::clock_mode::SIGNAL_TRIGGER_STOP) ? output_port::clock_mode::SYNC : static_cast<output_port::clock_mode>(static_cast<int>(cm) + 1);
+    }
+
+    output_port::clock_mode& operator--(output_port::clock_mode& cm) {
+        return cm = (cm == output_port::clock_mode::SYNC) ? output_port::clock_mode::SIGNAL_TRIGGER_STOP : static_cast<output_port::clock_mode>(static_cast<int>(cm) - 1);
+    }
+
     output_port::output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
                              std::shared_ptr<menu_action_queue> menu, u8 port_number)
         : m_digital_pin(digital_pin)

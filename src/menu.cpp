@@ -57,7 +57,8 @@ namespace midimagic {
         , m_port(m_inventory->get_output_port(m_port_number))
         , m_menu_items{"Switch Note/Velocit",
                        "Change Clock Rate",
-                       "Resync Clock"}
+                       "Resync Clock",
+                       "Change Clock Mode"}
         , m_port_menu_dimensions{NanoPoint{0, 24}, NanoPoint{127, 63}}
         {
         m_port_menu = std::make_unique<LcdGfxMenu>(m_menu_items,
@@ -74,35 +75,47 @@ namespace midimagic {
                 // show pin submenu
                 m_display.clear();
                 m_display.setFixedFont(ssd1306xled_font6x8);
+                // show port number
                 m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
-
+                // show pitch/velocity setting
                 if (m_port->get_velocity_switch()) {
                     m_display.printFixed(0, 8, "Output: Velocity", STYLE_NORMAL);
                 } else {
                     m_display.printFixed(0, 8, "Output: Note", STYLE_NORMAL);
                 }
-
-                m_display.printFixed(0, 16, "Clock Rate:");
-                parse_draw_clock_rate(m_port->get_clock_rate(), 72, 16);
+                // If port is in SYNC mode show clock rate setting
+                // show current signaling mode otherwise
+                if (m_port->get_clock_mode() == output_port::clock_mode::SYNC) {
+                    m_display.printFixed(0, 16, "Clock Rate:");
+                    parse_draw_clock_rate(m_port->get_clock_rate(), 72, 16);
+                } else {
+                    m_display.printFixed(0, 16, "Signaling:");
+                    parse_draw_clock_mode(m_port->get_clock_mode(), 66, 16);
+                }
 
                 m_port_menu->show(m_display);
                 break;
             case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
                     if (m_port_menu->selection() == 0) {
-                            m_port->set_velocity_switch();
-                            // trigger display update
-                            menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
-                            m_menu_state->notify(a);
+                        m_port->set_velocity_switch();
+                        // trigger display update
+                        menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                        m_menu_state->notify(a);
                     } else if (m_port_menu->selection() == 1) {
-                            // switch to config_port_clock_view
-                            auto v = std::make_shared<config_port_clock_view>(m_port_number, m_display, m_menu_state, m_inventory);
-                            m_menu_state->register_view(v);
+                        // switch to config_port_clock_view
+                        auto v = std::make_shared<config_port_clock_view>(m_port_number, m_display, m_menu_state, m_inventory);
+                        m_menu_state->register_view(v);
                     } else if (m_port_menu->selection() == 2) {
-                            m_port->reset_clock();
+                        m_port->reset_clock();
+                    } else if (m_port_menu->selection() == 3) {
+                        // switch to config_port_clockmode_view
+                        auto v = std::make_shared<config_port_clockmode_view>(m_port_number, m_display, m_menu_state, m_inventory);
+                        m_menu_state->register_view(v);
                     }
+
                 } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
                     // switch to over_view
                     auto v = std::make_shared<over_view>(m_display, m_menu_state, m_inventory);
@@ -157,6 +170,34 @@ namespace midimagic {
                 m_display.setTextCursor(x, y);
                 m_display.print(clock_rate);
                 m_display.printFixed(x + 32, y, "timing Clocks");
+                break;
+        }
+    }
+
+    void port_view::parse_draw_clock_mode(const output_port::clock_mode clock_mode, const u8 x, const u8 y) const {
+        u8 _x;
+        if (clock_mode > output_port::clock_mode::SIGNAL_GATE) {
+            m_display.printFixed(x, y, "Trg:");
+            _x = x + 30;
+        }
+        switch (clock_mode) {
+            case output_port::clock_mode::SYNC :
+                m_display.printFixed(x, y, "Sync");
+                break;
+            case output_port::clock_mode::SIGNAL_GATE :
+                m_display.printFixed(x, y, "gated");
+                break;
+            case output_port::clock_mode::SIGNAL_TRIGGER_START :
+                m_display.printFixed(_x, y, "Start");
+                break;
+            case output_port::clock_mode::SIGNAL_TRIGGER_CONT :
+                m_display.printFixed(_x, y, "Cont");
+                break;
+            case output_port::clock_mode::SIGNAL_TRIGGER_STOP :
+                m_display.printFixed(_x, y, "Stop");
+                break;
+            default :
+                m_display.printFixed(x, y, "N/A");
                 break;
         }
     }
@@ -218,6 +259,63 @@ namespace midimagic {
                     auto v = std::make_shared<port_view>(m_port_number, m_display, m_menu_state, m_inventory);
                     m_menu_state->register_view(v);
                 }
+                break;
+            default:
+                // nothing to do
+                break;
+        }
+    }
+
+    config_port_clockmode_view::config_port_clockmode_view(u8 port_number,
+                                                   DisplaySSD1306_128x64_I2C &d,
+                                                   std::shared_ptr<menu_state> menu_state,
+                                                   std::shared_ptr<inventory> invent)
+        : port_view(port_number, d, menu_state, invent)
+        , m_clock_mode(m_port->get_clock_mode()) {
+        // nothing to do
+    }
+
+    config_port_clockmode_view::~config_port_clockmode_view() {
+        // nothing to do
+    }
+
+    void config_port_clockmode_view::notify(const menu_action& a) {
+        switch (a.m_kind) {
+            case menu_action::kind::UPDATE :
+                m_display.clear();
+                m_display.setFixedFont(ssd1306xled_font6x8);
+                m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
+                m_display.setTextCursor(36, 0);
+                m_display.print(m_port_number + 1);
+                m_display.printFixed(0, 8, "Set Clock Mode:", STYLE_NORMAL);
+                parse_draw_clock_mode(m_clock_mode, 0, 16);
+                break;
+            case menu_action::kind::PORT_ACTIVITY :
+                if        (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
+                    ++m_clock_mode;
+                    // trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+
+                } else if (a.m_subkind == menu_action::subkind::ROT_LEFT) {
+                    --m_clock_mode;
+                    // trigger display update
+                    menu_action a(menu_action::kind::UPDATE, menu_action::subkind::NO_SUB);
+                    m_menu_state->notify(a);
+
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON) {
+                    // set output_port property
+                    m_port->set_clock_mode(m_clock_mode);
+                    // switch back to port_view
+                    auto v = std::make_shared<port_view>(m_port_number, m_display, m_menu_state, m_inventory);
+                    m_menu_state->register_view(v);
+
+                } else if (a.m_subkind == menu_action::subkind::ROT_BUTTON_LONGPRESS) {
+                    // switch back to port_view without setting clock mode
+                    auto v = std::make_shared<port_view>(m_port_number, m_display, m_menu_state, m_inventory);
+                    m_menu_state->register_view(v);
+                }
+                break;
             default:
                 // nothing to do
                 break;

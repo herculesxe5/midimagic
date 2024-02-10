@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021-2023 Lukas Jünger and Adrian Krause                         *
+ * Copyright 2021-2024 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *

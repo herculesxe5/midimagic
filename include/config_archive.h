@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022, 2024 Adrian Krause                                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -61,7 +61,7 @@ namespace midimagic {
         const operation_result writeout();
 
     private:
-        #define RUNNING_VERSION 1
+        #define RUNNING_VERSION 2
         #define MAGIC 0x4d4d // "MM"
 
         enum static_header_field : u16 {
@@ -75,13 +75,14 @@ namespace midimagic {
             FIRST_CONFIG_BASE_ADDR
         };
 
-        enum v1_port_config_field : u16 {
+        enum port_config_field : u16 {
             PORT_NUMBER = 0,
             CLOCK_RATE,
-            VELOCITY
+            VELOCITY,
+            CLOCK_MODE
         };
 
-        enum v1_portgroup_config_field : u16 {
+        enum portgroup_config_field : u16 {
             DEMUX_TYPE = 0,
             MIDI_CHANNEL,
             CC_NUMBER,
@@ -103,14 +104,113 @@ namespace midimagic {
         // serialise config struct and write to eeprom, return size
         u16 serialise(struct output_port_config config, u16 base_addr);
         u16 serialise(struct port_group_config config, u16 base_addr);
-        // deserialise struct of type from eeprom, write to system_state
-        const operation_result deserialise(config_type type, u16 base_addr);
 
         struct system_config m_system_state;
         microwire_eeprom m_eeprom;
-        const u16 k_port_config_size = 3;
+        const u16 k_port_config_size = 4;
         const u16 k_fixed_portgroup_config_size = 6;
         u8 m_running_portgroup_id;
+    };
+
+    class archive_parser {
+    public:
+        explicit archive_parser(microwire_eeprom& eeprom);
+        archive_parser() = delete;
+        archive_parser(const archive_parser&) = delete;
+        virtual ~archive_parser();
+
+        virtual const config_archive::operation_result parse() = 0;
+        virtual std::unique_ptr<const struct system_config> get_config() const;
+
+    protected:
+
+        enum static_header_field : u16 {
+            MAGIC0 = 0,
+            MAGIC1,
+            VERSION,
+            SIZE0,
+            SIZE1,
+            PORT_CONFIG_COUNT,
+            PORTGROUP_CONFIG_COUNT,
+            FIRST_CONFIG_BASE_ADDR
+        };
+
+        enum portgroup_config_field : u16 {
+            DEMUX_TYPE = 0,
+            MIDI_CHANNEL,
+            CC_NUMBER,
+            TRANSPOSE,
+            INPUT_TYPE_COUNT,
+            OUTPUT_PORTS, // 1 byte bitfield [Port0(MSB),...,Port7(LSB)]
+            FIRST_VARIABLE
+        };
+
+        virtual const config_archive::operation_result read_header();
+
+        virtual const struct output_port_config deserialise_port(const u16 base_addr) const = 0;
+        virtual const struct port_group_config deserialise_portgroup(const u16 base_addr, const u8 pg_id) const = 0;
+
+        const microwire_eeprom& k_eeprom;
+        u16 m_archive_size;
+        std::vector<u16> m_port_config_addrs;
+        std::vector<u16> m_portgroup_config_addrs;
+        struct system_config m_system_config;
+    };
+
+    class archive_parser_v1 : public archive_parser {
+    public:
+        explicit archive_parser_v1(microwire_eeprom& eeprom);
+        archive_parser_v1() = delete;
+        archive_parser_v1(const archive_parser_v1&) = delete;
+        virtual ~archive_parser_v1();
+
+        virtual const config_archive::operation_result parse() override;
+
+    protected:
+
+        enum port_config_field : u16 {
+            PORT_NUMBER = 0,
+            CLOCK_RATE,
+            VELOCITY,
+            _FIELD_COUNT_
+        };
+
+        virtual const struct output_port_config deserialise_port(const u16 base_addr) const override;
+        virtual const struct port_group_config deserialise_portgroup(const u16 base_addr, const u8 pg_id) const override;
+
+        virtual const u8 read_port_number(const u16 base_addr) const;
+        virtual const u8 read_port_clock_rate(const u16 base_addr) const;
+        virtual const bool read_port_velocity(const u16 base_addr) const;
+
+        virtual const demux_type read_portgroup_demux(const u16 base_addr) const;
+        virtual const u8 read_portgroup_chan(const u16 base_addr) const;
+        virtual const u8 read_portgroup_cc(const u16 base_addr) const;
+        virtual const i8 read_portgroup_transpose(const u16 base_addr) const;
+        virtual const std::vector<midi_message::message_type> read_portgroup_msg_types(const u16 base_addr) const;
+        virtual const std::vector<u8> read_portgroup_ports(const u16 base_addr) const;
+    };
+
+    class archive_parser_v2 : public archive_parser_v1 {
+    public:
+        explicit archive_parser_v2(microwire_eeprom& eeprom);
+        archive_parser_v2() = delete;
+        archive_parser_v2(const archive_parser_v2&) = delete;
+        virtual ~archive_parser_v2();
+
+    protected:
+
+        enum port_config_field : u16 {
+            PORT_NUMBER = 0,
+            CLOCK_RATE,
+            VELOCITY,
+            CLOCK_MODE,
+            _FIELD_COUNT_
+        };
+
+        virtual const struct output_port_config deserialise_port(const u16 base_addr) const override;
+
+        // new port property added in version 2
+        virtual const output_port::clock_mode read_port_clock_mode(const u16 base_addr) const;
     };
 } // namespace midimagic
 #endif // MIDIMAGIC_CONFIG_ARCHIVE_H

@@ -220,7 +220,7 @@ namespace midimagic {
             case menu_action::kind::UPDATE :
                 m_display.clear();
                 m_display.setFixedFont(ssd1306xled_font6x8);
-                m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
+                m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
                 m_display.printFixed(0, 8, "Set Clock Rate:", STYLE_NORMAL);
@@ -284,13 +284,13 @@ namespace midimagic {
             case menu_action::kind::UPDATE :
                 m_display.clear();
                 m_display.setFixedFont(ssd1306xled_font6x8);
-                m_display.printFixed(4, 0, "Port:", STYLE_NORMAL);
+                m_display.printFixed(0, 0, "Port:", STYLE_NORMAL);
                 m_display.setTextCursor(36, 0);
                 m_display.print(m_port_number + 1);
                 m_display.printFixed(0, 8, "Set Clock Mode:", STYLE_NORMAL);
                 parse_draw_clock_mode(m_clock_mode, 0, 16);
                 break;
-            case menu_action::kind::PORT_ACTIVITY :
+            case menu_action::kind::ROT_ACTIVITY :
                 if        (a.m_subkind == menu_action::subkind::ROT_RIGHT) {
                     ++m_clock_mode;
                     // trigger display update

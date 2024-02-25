@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021,2024 Lukas Jünger and Adrian Krause                         *
+ * Copyright 2021, 2024 Lukas Jünger and Adrian Krause                        *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -73,7 +73,7 @@ namespace midimagic {
         void reset_clock();
         void set_velocity_switch();
         const bool get_velocity_switch() const;
-        void set_clock_mode(clock_mode cm);
+        void set_clock_mode(const clock_mode cm);
         const clock_mode get_clock_mode() const;
 
     private:

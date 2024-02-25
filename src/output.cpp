@@ -180,6 +180,11 @@ namespace midimagic {
                 // lower pin after duty cycle of 4 clocks,
                 // reset clock_count when at value of clock_rate
                 inhibit_dac_update = true;
+                if (m_clock_mode != clock_mode::SYNC) {
+                    inhibit_digital_pin = true;
+                    inhibit_menu_action = true;
+                    break;
+                }
                 port_status = menu_action::subkind::PORT_ACTIVE_CLK;
                 m_clock_count++;
                 if (m_clock_count >= m_clock_rate) {
@@ -256,7 +261,7 @@ namespace midimagic {
         return m_output_velocity;
     }
 
-    void output_port::set_clock_mode(clock_mode cm) {
+    void output_port::set_clock_mode(const clock_mode cm) {
         m_clock_mode = cm;
     }
 

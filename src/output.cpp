@@ -92,12 +92,12 @@ namespace midimagic {
                     steps = delta * 136 << 2;
                 } else {
                     //FIXME adjust voltage scaling
-                    steps = msg.data1 << 2;
+                    steps = msg.data1 << 3;
                 }
                 break;
             case midi_message::message_type::POLY_KEY_PRESSURE :
                 // output unipolar representation of the value
-                steps = msg.data1 << 2;
+                steps = msg.data1 << 3;
                 inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::CONTROL_CHANGE :
@@ -112,7 +112,7 @@ namespace midimagic {
                 break;
             case midi_message::message_type::CHANNEL_PRESSURE :
                 // output unipolar representation of the value
-                steps = msg.data0 << 2;
+                steps = msg.data0 << 3;
                 inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::PITCH_BEND :

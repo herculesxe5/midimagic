@@ -65,10 +65,10 @@ The different MIDI message types are interpreted as follows:
 | ---- | --------- | ------------- | -------------- |
 | Note On | 0x08 | The pitch information as halftone offset from C4 with 1V/Oct scaling Or note velocity | High voltage until Note Off for the note is received |
 | Note Off | 0x09 | unchanged | Low voltage |
-| Polyphonic Key Pressure/Aftertouch | 0xA | Raw value scaled to ~2.5V | unchanged |
+| Polyphonic Key Pressure/Aftertouch | 0xA | Raw value scaled to ~5V | unchanged |
 | Control Change | 0xB | Raw value | Low if value is less than 64, else High (as per MIDI spec) |
 | Program Change | 0xC | Ignored * | |
-| Channel Pressure/Monophonic Aftertouch | 0xD | Raw value scaled to ~2.5V | unchanged |
+| Channel Pressure/Monophonic Aftertouch | 0xD | Raw value scaled to ~5V | unchanged |
 | Pitch Bend | 0xE | Raw value scaled to 2 halftones (as per MIDI spec), but is added to the current value if port is active | unchanged |
 | Clock | 0xF8 | unchanged | Rate adjustable trigger with 5 clock ticks duty cycle |
 | Start | 0xFA | unchanged | Resyncs clock period on the next clock message |

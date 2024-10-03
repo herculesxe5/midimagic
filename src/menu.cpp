@@ -132,7 +132,7 @@ namespace midimagic {
                 if (a.m_data0 == m_port_number) {
                     if        (a.m_subkind == menu_action::subkind::PORT_ACTIVE) {
                         m_display.printFixed(100, 0, "*", STYLE_NORMAL);
-                        m_display.setTextCursor(120, 0);
+                        m_display.setTextCursor(112, 0);
                         m_display.print(a.m_data1);
                     } else if (a.m_subkind == menu_action::subkind::PORT_ACTIVE_CC) {
                         m_display.printFixed(100, 0, "CC", STYLE_NORMAL);

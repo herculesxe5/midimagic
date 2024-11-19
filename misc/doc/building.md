@@ -8,11 +8,11 @@ Our prototype board was build by hand on a 100x160 mm eurocard style one-side-co
 
 ### IO Pin Assignment
 
-=> hardware_config.h
+=> [hardware_config.h](/include/hardware_config.h)
 
 ### Empty Config EEPROM
 
-=> EEPROM Status Codes
+=> [EEPROM Status Codes](/misc/doc/gui.md#error-codes-while-loading-and-storing)
 
 ### Wire Routing and Component Placement
 

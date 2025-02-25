@@ -136,7 +136,7 @@ If it is desired that midimagic comes up in a pristine state (read: with no conf
 | ---------- | ------- | ------- |
 | 0 | Success | Normally not shown |
 | 1 | No config header found | Unwritten/empty EEPROM or no data received from the EEPROM |
-| 2 | Config format version unknown | Currently there is only 1 format so if you see this the EEPROM is defective or you are getting wrong data |
+| 2 | Archive version unknown | The written config version is not supported anymore, the EEPROM is defective or you are getting wrong data |
 | 3 | Config size mismatch | The size is not matching the value in the header or bigger than the EEPROM size |
 | 4 | Archive empty | Header contains no port or portgroup configuration, not necessarily a fault |
 | 5 | Corrupt header | Malformed header structure or other inconsistent data |

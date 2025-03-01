@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022, 2024 Adrian Krause                                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -98,6 +98,11 @@ namespace midimagic {
         return;
     }
 
+    void microwire_eeprom::write_2byte(const u16 addr, const u16 data) {
+        write(addr, (u8) ((data >> 8) & 0xff));
+        write(addr + 1, (u8) (data & 0xff));
+    }
+
     const u8 microwire_eeprom::read(const u16 addr) const {
         if (addr >= k_eeprom_size) {
             return 0;
@@ -126,6 +131,11 @@ namespace midimagic {
 
         digitalWrite(k_cs, LOW);
         return data;
+    }
+
+    const u16 microwire_eeprom::read_2byte(const u16 addr) const {
+        u16 data = read(addr) << 8;
+        return data + read(addr + 1);
     }
 
     void microwire_eeprom::enable_write() {

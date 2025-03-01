@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022, 2024 Adrian Krause                                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -30,16 +30,17 @@ namespace midimagic {
 
     struct output_port_config {
         u8 port_number;
-        u8 clock_rate;
-        bool velocity_output;
+        u8 clock_rate = 24;
+        bool velocity_output = false;
+        output_port::clock_mode clock_mode = output_port::clock_mode::SYNC;
     };
 
     struct port_group_config {
         u8 id;
-        demux_type demux;
-        u8 midi_channel;
-        u8 cont_controller_number;
-        i8 transpose_offset;
+        demux_type demux = demux_type::RANDOM;
+        u8 midi_channel = 0;
+        u8 cont_controller_number = 0;
+        i8 transpose_offset = 0;
         std::vector<midi_message::message_type> input_types;
         std::vector<u8> output_port_numbers;
     };

@@ -29,11 +29,11 @@ The menu is structured as follows:
                     |                         | Add/remove MIDI input,  |     | output port, Set transpose |
                     |                         | Set controller)         |     | offset)                    |
                     V                         ---------------------------     ------------------------------
-    --------------------------                                |                     |
-    | Change port properties |                                |                     |
-    | (Pitch/Velocity mode,  |                                V                     V
-    | Clock Rate)            |                -----------------------         -----------------------
-    --------------------------                | Value entry subview |         | Value entry subview |
+    ---------------------------                               |                     |
+    | Change port properties  |                               |                     |
+    | (Pitch/Velocity mode,   |                               V                     V
+    | Clock mode, Clock Rate) |               -----------------------         -----------------------
+    ---------------------------               | Value entry subview |         | Value entry subview |
                     |                         -----------------------         -----------------------
                     |
                     V
@@ -56,6 +56,25 @@ Port view shows current activity, the properties of the selected port and a menu
 Possible values are: "Note" or "Velocity".
 Only significant when the port receives note messages. "Note" will have the port output pitch control voltage, "Velocity" outputs the velocity infomation of received note messages.
 
+**Clock mode:**
+The different clock modes set the behaviour of the gate/trigger output when receiving Timing Clock and Start/Continue/Stop messages. These are most usefull to control sequencers.
+
+- **Sync**
+Rate adjustable trigger with 5 clock ticks duty cycle synced to the MIDI Timing Clock messages.
+The available clock rates are: 1 trigger per beat/every 96 clocks, 1/2 notes/every 48 clocks, 1/4 notes/every 24 clocks, 1/8 notes/every 12 clocks and 1/16 notes/every 6 clocks.
+
+- **Gate**
+High if Start or Continue was received, low voltage on receipt of a Stop message. Basically signalling if the MIDI Clock is running or not. Usefull to start and stop a sequencer via a "run" input.
+
+- **Start Trigger**
+Sets the output high on receipt of a Start message. Can be used to reset a sequencer if a reset input is available. The next non-Start message will set the output low again.
+
+- **Continue Trigger**
+Sets the output high on receipt of a Continue message. The next non-Continue message will set the output low again.
+
+- **Stop Trigger**
+Sets the output high on receipt of a Stop message. The next non-Stop message will set the output low again.
+
 **Clock rate:**
 Only significant when the port receives clock messages. Change the rate of clock triggers on the digital output portion in the range of 1/16th note (shortest, i.e. every 6 clock messages) and 1 per beat (currently longest, i.e. every 96 clock messages).
 
@@ -71,7 +90,7 @@ Shown on the left half of the screen. The current selected channel in the first 
 If the downwards arrow is in the left half of the screen a short button press on the rotary encoder will show a menu to modify the input properties.
 
 ***Channel:***
-The MIDI channel the portgroup listens on. When listening for system messages (like clock) the channel is not relevant as system messages are channel independent.
+The MIDI channel the portgroup listens on. When listening only for system messages (like clock) the channel is not relevant as system messages are channel independent.
 
 ***MIDI input types:***
 MIDI message types the portgroup listens to.
@@ -117,7 +136,7 @@ If it is desired that midimagic comes up in a pristine state (read: with no conf
 | ---------- | ------- | ------- |
 | 0 | Success | Normally not shown |
 | 1 | No config header found | Unwritten/empty EEPROM or no data received from the EEPROM |
-| 2 | Config format version unknown | Currently there is only 1 format so if you see this the EEPROM is defective or you are getting wrong data |
+| 2 | Archive version unknown | The written config version is not supported anymore, the EEPROM is defective or you are getting wrong data |
 | 3 | Config size mismatch | The size is not matching the value in the header or bigger than the EEPROM size |
 | 4 | Archive empty | Header contains no port or portgroup configuration, not necessarily a fault |
 | 5 | Corrupt header | Malformed header structure or other inconsistent data |

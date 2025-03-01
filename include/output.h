@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021 Lukas Jünger and Adrian Krause                              *
+ * Copyright 2021, 2024 Lukas Jünger and Adrian Krause                        *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -49,6 +49,18 @@ namespace midimagic {
         output_port(const output_port&) = delete;
         output_port() = delete;
 
+        enum clock_mode {
+            SYNC = 0,
+            SIGNAL_GATE,
+            SIGNAL_TRIGGER_START,
+            SIGNAL_TRIGGER_CONT,
+            SIGNAL_TRIGGER_STOP
+        };
+
+        friend clock_mode& operator++(clock_mode& cm);
+        friend clock_mode& operator--(clock_mode& cm);
+
+
         bool is_active();
         bool is_note(midi_message &msg);
         void set_note(midi_message &note_on_msg);
@@ -61,6 +73,8 @@ namespace midimagic {
         void reset_clock();
         void set_velocity_switch();
         const bool get_velocity_switch() const;
+        void set_clock_mode(const clock_mode cm);
+        const clock_mode get_clock_mode() const;
 
     private:
         u8 m_digital_pin;
@@ -70,6 +84,7 @@ namespace midimagic {
         u8 m_clock_count;
         u8 m_clock_rate; // number of clock messages at which counter gets reset, 24 per quarter note
         bool m_output_velocity;
+        clock_mode m_clock_mode;
         std::shared_ptr<menu_action_queue> m_menu;
         u8 m_port_number;
     };

@@ -80,6 +80,7 @@ namespace midimagic {
             if (system_port->get_velocity_switch() != port_config.velocity_output) {
                 system_port->set_velocity_switch();
             }
+            system_port->set_clock_mode(port_config.clock_mode);
         }
         // setup port groups
         for (auto &pg_config: m_system_config.system_port_groups) {
@@ -118,7 +119,8 @@ namespace midimagic {
             const struct output_port_config current_port {
                 .port_number {port->get_port_number()},
                 .clock_rate {port->get_clock_rate()},
-                .velocity_output {port->get_velocity_switch()}
+                .velocity_output {port->get_velocity_switch()},
+                .clock_mode {port->get_clock_mode()}
             };
             current_state.system_ports.push_back(std::move(current_port));
         }

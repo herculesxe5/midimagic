@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021-2023 Lukas Jünger and Adrian Krause                         *
+ * Copyright 2021-2024 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -44,6 +44,14 @@ namespace midimagic {
         return demux_type_names[type];
     }
 
+    output_port::clock_mode& operator++(output_port::clock_mode& cm) {
+        return cm = (cm == output_port::clock_mode::SIGNAL_TRIGGER_STOP) ? output_port::clock_mode::SYNC : static_cast<output_port::clock_mode>(static_cast<int>(cm) + 1);
+    }
+
+    output_port::clock_mode& operator--(output_port::clock_mode& cm) {
+        return cm = (cm == output_port::clock_mode::SYNC) ? output_port::clock_mode::SIGNAL_TRIGGER_STOP : static_cast<output_port::clock_mode>(static_cast<int>(cm) - 1);
+    }
+
     output_port::output_port(u8 digital_pin, u8 dac_channel, ad57x4 &dac,
                              std::shared_ptr<menu_action_queue> menu, u8 port_number)
         : m_digital_pin(digital_pin)
@@ -53,6 +61,7 @@ namespace midimagic {
         , m_clock_count(0)
         , m_clock_rate(24)
         , m_output_velocity(false)
+        , m_clock_mode(clock_mode::SYNC)
         , m_menu(menu)
         , m_port_number(port_number) {
         pinMode(m_digital_pin, OUTPUT);
@@ -83,12 +92,12 @@ namespace midimagic {
                     steps = delta * 136 << 2;
                 } else {
                     //FIXME adjust voltage scaling
-                    steps = msg.data1 << 2;
+                    steps = msg.data1 << 3;
                 }
                 break;
             case midi_message::message_type::POLY_KEY_PRESSURE :
                 // output unipolar representation of the value
-                steps = msg.data1 << 2;
+                steps = msg.data1 << 3;
                 inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::CONTROL_CHANGE :
@@ -103,7 +112,7 @@ namespace midimagic {
                 break;
             case midi_message::message_type::CHANNEL_PRESSURE :
                 // output unipolar representation of the value
-                steps = msg.data0 << 2;
+                steps = msg.data0 << 3;
                 inhibit_digital_pin = true;
                 break;
             case midi_message::message_type::PITCH_BEND :
@@ -122,20 +131,60 @@ namespace midimagic {
                     steps = PB_offset << 2;
                 }
                 break;
-            case midi_message::message_type::START :
-                // just slide through
-            case midi_message::message_type::CONTINUE :
-                // reset clock_count on receipt of START or CONTINUE to resync on the next clock
-                m_clock_count = 0;
+            case midi_message::message_type::STOP :
+                // If we are set to trigger mode with 'stop' turn port "on".
+                // Turn port "off" for all other modes
+                // Break flow everytime
                 inhibit_dac_update = true;
-                digital_pin_control = LOW;
-                port_status = menu_action::subkind::PORT_NACTIVE;
+                if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_STOP) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                } else {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                }
+                break;
+            case midi_message::message_type::START :
+                // If we get START messsage in TRIGGER_START mode turn port "on" and break execution.
+                // If mode is not SYNC or GATE turn port "off" and break execution.
+                // In SYNC or GATE mode continue to next case.
+                inhibit_dac_update = true;
+                if (m_clock_mode == clock_mode::SIGNAL_TRIGGER_START) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                    break;
+                } else if (m_clock_mode > clock_mode::SIGNAL_GATE) {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                    break;
+                }
+                // continue to next case for other clock modes
+            case midi_message::message_type::CONTINUE :
+                // Here we can stumble upon all CONTINUE messages and if in GATE mode START messages will arrive here too.
+                // In SYNC mode reset the port state for either message.
+                // In GATE or continue-trigger mode turn port "on".
+                // Turn port off for all other modes (i.e. the other trigger modes).
+                inhibit_dac_update = true;
+                if (m_clock_mode == clock_mode::SYNC) {
+                    // reset clock_count on receipt of START or CONTINUE to resync on the next clock
+                    m_clock_count = 0;
+                    digital_pin_control = LOW;
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                } else if ((m_clock_mode == clock_mode::SIGNAL_GATE) || (m_clock_mode == clock_mode::SIGNAL_TRIGGER_CONT)) {
+                    port_status = menu_action::subkind::PORT_ACTIVE_CLK;
+                } else {
+                    port_status = menu_action::subkind::PORT_NACTIVE;
+                    digital_pin_control = LOW;
+                }
                 break;
             case midi_message::message_type::CLOCK :
                 // raise digital pin on clock_count 1,
                 // lower pin after duty cycle of 4 clocks,
                 // reset clock_count when at value of clock_rate
                 inhibit_dac_update = true;
+                if (m_clock_mode != clock_mode::SYNC) {
+                    inhibit_digital_pin = true;
+                    inhibit_menu_action = true;
+                    break;
+                }
                 port_status = menu_action::subkind::PORT_ACTIVE_CLK;
                 m_clock_count++;
                 if (m_clock_count >= m_clock_rate) {
@@ -210,6 +259,14 @@ namespace midimagic {
 
     const bool output_port::get_velocity_switch() const {
         return m_output_velocity;
+    }
+
+    void output_port::set_clock_mode(const clock_mode cm) {
+        m_clock_mode = cm;
+    }
+
+    const output_port::clock_mode output_port::get_clock_mode() const {
+        return m_clock_mode;
     }
 
     output_demux::output_demux(const demux_type type)

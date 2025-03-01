@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2021,2022 Lukas Jünger and Adrian Krause                         *
+ * Copyright 2021-2024 Lukas Jünger and Adrian Krause                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -69,9 +69,10 @@ namespace midimagic {
         const u8 m_port_number;
         std::shared_ptr<output_port> m_port;
         void parse_draw_clock_rate(const u8 clock_rate, const u8 x, const u8 y) const;
+        void parse_draw_clock_mode(const output_port::clock_mode clock_mode, const u8 x, const u8 y) const;
 
     private:
-        const char *m_menu_items[3];
+        const char *m_menu_items[4];
         const NanoRect m_port_menu_dimensions;
         std::unique_ptr<LcdGfxMenu> m_port_menu;
     };
@@ -90,6 +91,22 @@ namespace midimagic {
 
     private:
         u8 m_clock_rate;
+    };
+
+    class config_port_clockmode_view : public port_view {
+    public:
+        explicit config_port_clockmode_view(u8 port_number,
+                                        DisplaySSD1306_128x64_I2C &d,
+                                        std::shared_ptr<menu_state> menu_state,
+                                        std::shared_ptr<inventory> invent);
+        config_port_clockmode_view() = delete;
+        config_port_clockmode_view(const config_port_clockmode_view&) = delete;
+        virtual ~config_port_clockmode_view();
+
+        virtual void notify(const menu_action &a) override;
+
+    private:
+        output_port::clock_mode m_clock_mode;
     };
 
     class over_view : public menu_view {

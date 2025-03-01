@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2022 Adrian Krause                                               *
+ * Copyright 2022, 2024 Adrian Krause                                         *
  *                                                                            *
  * This file is part of Midimagic.                                            *
  *                                                                            *
@@ -41,7 +41,11 @@ namespace midimagic {
         ~microwire_eeprom();
 
         void write(const u16 addr, const u8 data);
+        // write 2 byte value, MSB at addr, LSB at addr + 1:
+        void write_2byte(const u16 addr, const u16 data);
         const u8 read(const u16 addr) const;
+        // read 2 byte value, MSB from addr, LSB from addr + 1
+        const u16 read_2byte(const u16 addr) const;
         void enable_write();
         void disable_write();
         const eeprom_size get_size() const;
